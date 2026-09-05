@@ -1,7 +1,17 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CalendarOff, Eye, Flame, Loader2, MoreHorizontal, Search, Trophy, UserX } from "lucide-react";
+import {
+  CalendarOff,
+  Dumbbell,
+  Eye,
+  Flame,
+  Loader2,
+  MoreHorizontal,
+  Search,
+  Trophy,
+  UserX,
+} from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -53,6 +63,7 @@ import {
 } from "@/lib/api/gym-manage";
 import { ApiError } from "@/lib/api/client";
 import { WEEKDAY_LABELS } from "@/lib/rest-day";
+import { formatDuration } from "@/components/workouts/workout-history-card";
 import { useGymManageContext } from "../gym-manage-context";
 import type { GymMember, GymMemberDetail } from "@/types/api";
 
@@ -330,6 +341,40 @@ function MemberDetailSheet({
                           className={CHECKIN_STATUS_TONE[checkin.status] ?? ""}
                         >
                           {checkin.status}
+                        </Badge>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Recent workouts</p>
+                {detail.recent_workouts.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No workouts logged yet.</p>
+                ) : (
+                  <ul className="space-y-1.5">
+                    {detail.recent_workouts.map((session) => (
+                      <li
+                        key={session.id}
+                        className="flex items-center justify-between rounded-md border border-border px-3 py-2 text-sm"
+                      >
+                        <span className="flex items-center gap-1.5">
+                          <Dumbbell className="size-3.5 text-muted-foreground" />
+                          {formatDateTime(session.started_at)} — {session.exercise_count} exercise
+                          {session.exercise_count === 1 ? "" : "s"}
+                        </span>
+                        <Badge
+                          variant="outline"
+                          className={
+                            session.status === "completed"
+                              ? "border-success/20 bg-success/10 text-success"
+                              : "bg-muted text-muted-foreground"
+                          }
+                        >
+                          {session.status === "completed"
+                            ? formatDuration(session.duration_seconds)
+                            : session.status}
                         </Badge>
                       </li>
                     ))}

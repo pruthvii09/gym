@@ -230,6 +230,7 @@ export interface GymMemberDetail extends GymMember {
   streak: UserStreak;
   rest_day: UserRestDay;
   recent_checkins: CheckIn[];
+  recent_workouts: WorkoutSessionSummary[];
 }
 
 // --- Member-facing check-in flow -------------------------------------------
@@ -427,3 +428,123 @@ export interface AdminRewardDefinition {
 export type UpdateAdminRewardDefinitionRequest = Partial<
   Omit<AdminRewardDefinition, "id" | "gym_name" | "created_at" | "updated_at">
 >;
+
+// --- Workouts -----------------------------------------------------------
+// Typed against apps/workouts. The exercise catalog is a vendored public
+// dataset (apps/workouts/data/exercises.json), seeded once -- not a live
+// third-party API.
+
+export type ExerciseCategory =
+  | "strength"
+  | "cardio"
+  | "stretching"
+  | "olympic weightlifting"
+  | "strongman"
+  | "plyometrics"
+  | "powerlifting";
+
+export interface Exercise {
+  id: string;
+  name: string;
+  category: string;
+  equipment: string;
+  level: string;
+  mechanic: string;
+  primary_muscles: string[];
+  secondary_muscles: string[];
+}
+
+export interface ExerciseDetail extends Exercise {
+  instructions: string[];
+}
+
+export interface ExerciseSet {
+  id: string;
+  set_number: number;
+  reps: number;
+  weight_kg: string | null;
+  created_at: string;
+}
+
+export interface AddSetRequest {
+  reps: number;
+  weight_kg?: number | null;
+}
+
+export type WorkoutSessionStatus = "active" | "completed" | "cancelled";
+
+export interface SessionExercise {
+  id: string;
+  exercise: Exercise;
+  order: number;
+  sets: ExerciseSet[];
+}
+
+// Shape returned by the history list and the gym-staff member sheet -- no
+// nested exercises/sets, just enough for a summary card.
+export interface WorkoutSessionSummary {
+  id: string;
+  gym_name: string;
+  started_at: string;
+  ended_at: string | null;
+  status: WorkoutSessionStatus;
+  exercise_count: number;
+  duration_seconds: number | null;
+}
+
+export interface WorkoutSessionDetail extends WorkoutSessionSummary {
+  exercises: SessionExercise[];
+}
+
+// --- Fraud (platform-staff) ---------------------------------------------
+
+export type FraudRiskLevel = "low" | "medium" | "high";
+export type FraudReviewStatus = "open" | "approved" | "rejected";
+export type FraudEventType =
+  | "qr_reuse"
+  | "gps_mismatch"
+  | "too_many_checkins"
+  | "impossible_travel"
+  | "multiple_accounts_device"
+  | "suspicious_pattern"
+  | "device_anomaly"
+  | "suspicious_account_creation"
+  | "suspicious_reward_claim";
+
+export interface AdminFraudReview {
+  id: string;
+  user: string;
+  user_email: string;
+  risk_level: FraudRiskLevel;
+  status: FraudReviewStatus;
+  reason: string;
+  resolved_at: string | null;
+  resolved_by: string | null;
+  resolved_by_email: string | null;
+  resolution_notes: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ResolveFraudReviewRequest {
+  status: "approved" | "rejected";
+  resolution_notes?: string;
+}
+
+export interface AdminFraudEvent {
+  id: string;
+  user: string;
+  user_email: string;
+  checkin: string | null;
+  checkin_gym_name: string | null;
+  checkin_checked_in_at: string | null;
+  review: string | null;
+  event_type: FraudEventType;
+  details: string;
+  created_at: string;
+}
+
+export interface CreateReviewFromEventsRequest {
+  event_ids: string[];
+  reason?: string;
+}

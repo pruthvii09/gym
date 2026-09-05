@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     "apps.challenges",
     "apps.notifications",
     "apps.audit",
+    "apps.workouts",
 ]
 
 MIDDLEWARE = [

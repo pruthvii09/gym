@@ -24,6 +24,8 @@ from apps.gyms.serializers import (
 )
 from apps.streaks import services as streak_services
 from apps.streaks.serializers import SetRestDaySerializer, UserRestDaySerializer, UserStreakSerializer
+from apps.workouts import services as workout_services
+from apps.workouts.serializers import WorkoutSessionListSerializer
 
 
 class GymListView(ListCreateAPIView):
@@ -112,11 +114,15 @@ class GymMemberDetailView(APIView):
         membership, streak, rest_day, recent_checkins = checkin_services.get_gym_member_detail(
             actor=request.user, gym=gym, membership_id=membership_id
         )
+        recent_workouts = workout_services.get_member_workout_summary(
+            actor=request.user, gym=gym, membership_id=membership_id
+        )
         data = {
             **GymMemberSerializer(membership).data,
             "streak": UserStreakSerializer(streak).data,
             "rest_day": UserRestDaySerializer(rest_day).data,
             "recent_checkins": CheckinSerializer(recent_checkins, many=True).data,
+            "recent_workouts": WorkoutSessionListSerializer(recent_workouts, many=True).data,
         }
         return Response(data)
 

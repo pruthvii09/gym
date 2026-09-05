@@ -21,6 +21,7 @@ urlpatterns = [
     path("api/v1/", include("apps.streaks.urls")),
     path("api/v1/", include("apps.rewards.urls")),
     path("api/v1/", include("apps.notifications.urls")),
+    path("api/v1/", include("apps.workouts.urls")),
     # Admin/operations API -- every endpoint under these is gated by
     # apps.common.permissions.IsStaffUser (User.is_staff), not just
     # IsAuthenticated. See API_CONTRACTS.md for the full admin surface.
