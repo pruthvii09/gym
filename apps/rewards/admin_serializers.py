@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from apps.rewards import services
 from apps.rewards.models import (
     InventoryTransaction,
     Product,
@@ -36,6 +37,8 @@ class AdminProductVariantCreateSerializer(serializers.Serializer):
 
 
 class AdminRewardDefinitionSerializer(serializers.ModelSerializer):
+    gym_name = serializers.CharField(source="gym.name", read_only=True, default=None)
+
     class Meta:
         model = RewardDefinition
         fields = (
@@ -45,6 +48,8 @@ class AdminRewardDefinitionSerializer(serializers.ModelSerializer):
             "reward_type",
             "required_streak",
             "product",
+            "gym",
+            "gym_name",
             "status",
             "terms",
             "require_email_verified",
@@ -55,7 +60,22 @@ class AdminRewardDefinitionSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         )
-        read_only_fields = ("id", "created_at", "updated_at")
+        read_only_fields = ("id", "gym_name", "created_at", "updated_at")
+
+    def validate(self, attrs):
+        instance = self.instance
+        services.validate_reward_fulfillment(
+            reward_type=attrs.get(
+                "reward_type", instance.reward_type if instance else RewardDefinition.RewardType.MERCHANDISE
+            ),
+            product=attrs.get("product", instance.product if instance else None),
+            gym=attrs.get("gym", instance.gym if instance else None),
+        )
+        return attrs
+
+
+class AdminRewardDefinitionRejectSerializer(serializers.Serializer):
+    reason = serializers.CharField(required=False, allow_blank=True, default="")
 
 
 class AdminRewardClaimSerializer(serializers.ModelSerializer):

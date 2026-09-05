@@ -15,6 +15,7 @@ from apps.rewards.admin_serializers import (
     AdminProductVariantSerializer,
     AdminRewardClaimSerializer,
     AdminRewardClaimTransitionSerializer,
+    AdminRewardDefinitionRejectSerializer,
     AdminRewardDefinitionSerializer,
 )
 from apps.rewards.models import (
@@ -126,6 +127,32 @@ class AdminRewardDefinitionDetailView(APIView):
         serializer.is_valid(raise_exception=True)
         reward_definition = services.admin_update_reward_definition(
             actor=request.user, reward_definition=reward_definition, **serializer.validated_data
+        )
+        return Response(AdminRewardDefinitionSerializer(reward_definition).data)
+
+
+class AdminRewardDefinitionApproveView(APIView):
+    permission_classes = [IsStaffUser]
+
+    def post(self, request, pk):
+        reward_definition = get_object_or_404(RewardDefinition, pk=pk)
+        reward_definition = services.admin_approve_reward_definition(
+            actor=request.user, reward_definition=reward_definition
+        )
+        return Response(AdminRewardDefinitionSerializer(reward_definition).data)
+
+
+class AdminRewardDefinitionRejectView(APIView):
+    permission_classes = [IsStaffUser]
+
+    def post(self, request, pk):
+        reward_definition = get_object_or_404(RewardDefinition, pk=pk)
+        serializer = AdminRewardDefinitionRejectSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        reward_definition = services.admin_reject_reward_definition(
+            actor=request.user,
+            reward_definition=reward_definition,
+            reason=serializer.validated_data["reason"],
         )
         return Response(AdminRewardDefinitionSerializer(reward_definition).data)
 

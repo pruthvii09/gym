@@ -13,8 +13,10 @@ from apps.rewards.admin_views import (
     AdminRewardClaimDetailView,
     AdminRewardClaimListView,
     AdminRewardClaimTransitionView,
+    AdminRewardDefinitionApproveView,
     AdminRewardDefinitionDetailView,
     AdminRewardDefinitionListCreateView,
+    AdminRewardDefinitionRejectView,
     AdminShipmentListView,
 )
 
@@ -67,6 +69,16 @@ urlpatterns = [
         "admin/reward-definitions/<uuid:pk>/",
         AdminRewardDefinitionDetailView.as_view(),
         name="admin-reward-definition-detail",
+    ),
+    path(
+        "admin/reward-definitions/<uuid:pk>/approve/",
+        AdminRewardDefinitionApproveView.as_view(),
+        name="admin-reward-definition-approve",
+    ),
+    path(
+        "admin/reward-definitions/<uuid:pk>/reject/",
+        AdminRewardDefinitionRejectView.as_view(),
+        name="admin-reward-definition-reject",
     ),
     # Reward claims / fulfillment
     path("admin/reward-claims/", AdminRewardClaimListView.as_view(), name="admin-reward-claim-list"),

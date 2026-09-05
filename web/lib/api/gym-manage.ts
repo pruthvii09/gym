@@ -5,12 +5,18 @@ import type {
   GymDeviceWithSecret,
   GymMember,
   GymMemberDetail,
+  GymPerkRedemption,
+  GymReward,
   GymStaffInvitePreview,
   GymStaffInviteSummary,
   GymStaffRole,
   GymSummary,
   PaginatedResponse,
+  ProposeGymRewardRequest,
+  SetRestDayRequest,
   UpdateGymRequest,
+  UpdateGymRewardRequest,
+  UserRestDay,
 } from "@/types/api";
 
 export function updateGym(gymId: string, payload: UpdateGymRequest) {
@@ -33,6 +39,18 @@ export function getGymMemberDetail(gymId: string, membershipId: string) {
   return apiFetch<GymMemberDetail>(
     `/api/v1/gyms/${gymId}/members/${membershipId}/`,
     {},
+    { auth: true }
+  );
+}
+
+export function updateGymMemberRestDay(
+  gymId: string,
+  membershipId: string,
+  payload: SetRestDayRequest
+) {
+  return apiFetch<UserRestDay>(
+    `/api/v1/gyms/${gymId}/members/${membershipId}/rest-day/`,
+    { method: "PATCH", body: JSON.stringify(payload) },
     { auth: true }
   );
 }
@@ -129,6 +147,38 @@ export function acceptGymStaffInvite(token: string) {
   return apiFetch<GymMember>(
     `/api/v1/staff-invites/${token}/accept/`,
     { method: "POST" },
+    { auth: true }
+  );
+}
+
+export function listGymRewards(gymId: string) {
+  return apiFetch<GymReward[]>(`/api/v1/gyms/${gymId}/rewards/`, {}, { auth: true });
+}
+
+export function proposeGymReward(gymId: string, payload: ProposeGymRewardRequest) {
+  return apiFetch<GymReward>(
+    `/api/v1/gyms/${gymId}/rewards/`,
+    { method: "POST", body: JSON.stringify(payload) },
+    { auth: true }
+  );
+}
+
+export function updateGymReward(
+  gymId: string,
+  rewardId: string,
+  payload: UpdateGymRewardRequest
+) {
+  return apiFetch<GymReward>(
+    `/api/v1/gyms/${gymId}/rewards/${rewardId}/`,
+    { method: "PATCH", body: JSON.stringify(payload) },
+    { auth: true }
+  );
+}
+
+export function verifyPerkRedemption(gymId: string, code: string) {
+  return apiFetch<GymPerkRedemption>(
+    `/api/v1/gyms/${gymId}/reward-redemptions/verify/`,
+    { method: "POST", body: JSON.stringify({ code }) },
     { auth: true }
   );
 }

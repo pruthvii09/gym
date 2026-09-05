@@ -214,8 +214,21 @@ export interface UserStreak {
   updated_at: string;
 }
 
+// 0=Monday..6=Sunday -- see web/lib/rest-day.ts for the JS-weekday conversion.
+export interface UserRestDay {
+  day_of_week: number | null;
+  self_service_changes_used: number;
+  self_service_changes_remaining: number;
+  updated_at: string;
+}
+
+export interface SetRestDayRequest {
+  day_of_week: number | null;
+}
+
 export interface GymMemberDetail extends GymMember {
   streak: UserStreak;
+  rest_day: UserRestDay;
   recent_checkins: CheckIn[];
 }
 
@@ -247,4 +260,170 @@ export interface CreateCheckinRequest {
 
 export interface CreateCheckinResult extends CheckIn {
   message: string;
+  // Both null unless this check-in was (or already was) verified -- a
+  // review/rejected check-in never touched the streak, so there's nothing
+  // to report. rewards_unlocked is [] (never null) either way.
+  streak: UserStreak | null;
+  rewards_unlocked: UserReward[];
 }
+
+// --- Rewards ----------------------------------------------------------------
+// Typed against API_CONTRACTS.md's rewards section (apps/rewards).
+
+export type RewardType = "merchandise" | "perk";
+// Mirrors GymStatus's shape exactly -- gym-proposed rewards go through the
+// same pending/approve-or-reject workflow as a self-service-created gym.
+// Platform-wide (staff-authored) rewards skip straight to "active".
+export type RewardDefinitionStatus = "pending" | "active" | "rejected" | "inactive";
+export type UserRewardStatus =
+  | "earned"
+  | "claimed"
+  | "processing"
+  | "shipped"
+  | "delivered"
+  | "cancelled";
+
+export interface ProductVariantLite {
+  id: string;
+  size: string;
+  in_stock: boolean;
+}
+
+export interface RewardDefinition {
+  id: string;
+  name: string;
+  description: string;
+  reward_type: RewardType;
+  required_streak: number;
+  terms: string;
+  variants: ProductVariantLite[];
+  gym_name: string | null;
+  created_at: string;
+}
+
+export interface RewardClaim {
+  id: string;
+  variant: string;
+  shipping_address: Record<string, string>;
+  tracking_number: string;
+  carrier: string;
+  status: UserRewardStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PerkRedemption {
+  id: string;
+  status: UserRewardStatus;
+  verified_at: string | null;
+  created_at: string;
+}
+
+export interface UserReward {
+  id: string;
+  reward_definition: RewardDefinition;
+  status: UserRewardStatus;
+  earned_at: string;
+  claimed_at: string | null;
+}
+
+export interface UserRewardDetail extends UserReward {
+  claim: RewardClaim | null;
+  perk_redemption: PerkRedemption | null;
+}
+
+export interface RewardProgress {
+  reward_definition: RewardDefinition;
+  user_reward: UserReward | null;
+  days_remaining: number;
+}
+
+export interface ClaimRewardRequest {
+  variant_id: string;
+  address: {
+    name: string;
+    line1: string;
+    line2?: string;
+    city: string;
+    state?: string;
+    postal_code: string;
+    country: string;
+    phone?: string;
+  };
+}
+
+export interface RedeemPerkResult extends PerkRedemption {
+  redemption_code?: string;
+}
+
+export interface ClaimRewardResult extends RewardClaim {
+  redemption_code?: string;
+}
+
+export interface Product {
+  id: string;
+  name: string;
+  sku: string;
+  type: string;
+}
+
+// --- Gym-proposed rewards (gym self-service) --------------------------------
+
+export interface GymReward {
+  id: string;
+  name: string;
+  description: string;
+  reward_type: RewardType;
+  required_streak: number;
+  product: string | null;
+  status: RewardDefinitionStatus;
+  terms: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProposeGymRewardRequest {
+  name: string;
+  description?: string;
+  reward_type: RewardType;
+  required_streak: number;
+  product?: string;
+  terms?: string;
+}
+
+export type UpdateGymRewardRequest = Partial<ProposeGymRewardRequest>;
+
+export interface GymPerkRedemption {
+  id: string;
+  user_email: string;
+  reward_name: string;
+  status: UserRewardStatus;
+  verified_at: string | null;
+  created_at: string;
+}
+
+// --- Admin (platform-staff) rewards ------------------------------------------
+
+export interface AdminRewardDefinition {
+  id: string;
+  name: string;
+  description: string;
+  reward_type: RewardType;
+  required_streak: number;
+  product: string | null;
+  gym: string | null;
+  gym_name: string | null;
+  status: RewardDefinitionStatus;
+  terms: string;
+  require_email_verified: boolean;
+  require_phone_verified: boolean;
+  minimum_account_age_days: number;
+  minimum_verified_checkins: number;
+  block_if_high_risk_review: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export type UpdateAdminRewardDefinitionRequest = Partial<
+  Omit<AdminRewardDefinition, "id" | "gym_name" | "created_at" | "updated_at">
+>;

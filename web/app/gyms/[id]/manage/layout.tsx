@@ -3,7 +3,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, usePathname, useParams } from "next/navigation";
 import Link from "next/link";
-import { Flame, LogOut, MoreHorizontal, QrCode, Settings2, ShieldCheck, Users } from "lucide-react";
+import {
+  Flame,
+  LogOut,
+  MoreHorizontal,
+  QrCode,
+  Settings2,
+  ShieldCheck,
+  Trophy,
+  Users,
+} from "lucide-react";
 
 import { useCurrentUser } from "@/lib/auth/use-current-user";
 import { logout as logoutRequest } from "@/lib/api/auth";
@@ -33,6 +42,7 @@ function buildTabs(gymId: string, role: GymMembershipRole) {
     { href: `/gyms/${gymId}/manage/members`, label: "Members", icon: Users },
     { href: `/gyms/${gymId}/manage/staff`, label: "Staff", icon: ShieldCheck },
     { href: `/gyms/${gymId}/manage/devices`, label: "Devices", icon: QrCode },
+    { href: `/gyms/${gymId}/manage/rewards`, label: "Rewards", icon: Trophy },
   ];
 }
 

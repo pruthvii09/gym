@@ -9,16 +9,19 @@ import secrets
 from dataclasses import dataclass
 
 from django.db import IntegrityError, transaction
-from django.db.models import Count, Sum
+from django.db.models import Count, Q, Sum
 from django.forms.models import model_to_dict
 from django.utils import timezone
 from rest_framework.exceptions import PermissionDenied, ValidationError
 
 from apps.audit import services as audit_services
 from apps.fraud.models import FraudReview
+from apps.gyms import services as gym_services
+from apps.gyms.models import GymMembership
 from apps.notifications.tasks import send_reward_shipped_notification, send_reward_unlocked_notification
 from apps.rewards.models import (
     InventoryTransaction,
+    PerkRedemption,
     Product,
     ProductVariant,
     RewardClaim,
@@ -39,6 +42,35 @@ EMAIL_NOT_VERIFIED_MSG = "Please verify your email address before claiming this 
 PHONE_NOT_VERIFIED_MSG = "Please verify your phone number before claiming this reward."
 ACCOUNT_TOO_NEW_MSG = "Your account is too new to claim this reward yet."
 INSUFFICIENT_CHECKINS_MSG = "You need more verified check-ins to claim this reward."
+NOT_MERCHANDISE_MSG = "This reward isn't a shippable item."
+NOT_PERK_MSG = "This reward isn't a gym-redeemed perk."
+INVALID_REDEMPTION_CODE_MSG = "Invalid or already-used redemption code."
+
+
+def _member_gym_id(user):
+    """The gym id of the user's own MEMBER-role membership, or None -- same
+    query apps.users.services.member_gym_summary uses, duplicated here
+    rather than imported (apps.rewards importing apps.users would be a new,
+    unnecessary cross-app edge for a two-line query).
+    """
+    return (
+        GymMembership.objects.filter(
+            user=user, role=GymMembership.Role.MEMBER, status=GymMembership.Status.ACTIVE
+        )
+        .values_list("gym_id", flat=True)
+        .first()
+    )
+
+
+def reward_gym_scope_filter(user):
+    """Platform-wide rewards (gym=None) apply to everyone; a gym-scoped
+    reward only applies to that gym's own members.
+    """
+    gym_filter = Q(gym__isnull=True)
+    member_gym_id = _member_gym_id(user)
+    if member_gym_id:
+        gym_filter |= Q(gym_id=member_gym_id)
+    return gym_filter
 
 
 def _generate_redemption_code() -> str:
@@ -75,10 +107,14 @@ def evaluate_rewards(user, streak):
     the streak later drops below required_streak -- milestones are sticky,
     never clawed back.
     """
-    candidates = RewardDefinition.objects.filter(
-        status=RewardDefinition.Status.ACTIVE,
-        required_streak__lte=streak.current_streak,
-    ).exclude(user_rewards__user=user)
+    candidates = (
+        RewardDefinition.objects.filter(
+            status=RewardDefinition.Status.ACTIVE,
+            required_streak__lte=streak.current_streak,
+        )
+        .filter(reward_gym_scope_filter(user))
+        .exclude(user_rewards__user=user)
+    )
 
     created = []
     for reward_definition in candidates:
@@ -155,6 +191,9 @@ def claim_reward(*, user, reward_definition, variant_id, address) -> ClaimResult
     transaction.atomic() spanning through RewardClaim creation. Fixed
     ordering everywhere in this module is what rules out deadlock.
     """
+    if reward_definition.reward_type != RewardDefinition.RewardType.MERCHANDISE:
+        raise ValidationError(NOT_MERCHANDISE_MSG)
+
     _check_reward_protection(user, reward_definition)
 
     with transaction.atomic():
@@ -226,6 +265,144 @@ def _finalize_claim(*, user_reward, variant, address) -> ClaimResult:
     user_reward.save(update_fields=["status", "claimed_at", "claim_code_hash", "updated_at"])
 
     return ClaimResult(claim=claim, created=True, redemption_code=plaintext_code)
+
+
+@dataclass
+class PerkRedemptionResult:
+    redemption: PerkRedemption
+    created: bool  # False => idempotent replay (view returns 200)
+    redemption_code: str | None  # None on replay -- shown exactly once
+
+
+def redeem_perk(*, user, reward_definition) -> PerkRedemptionResult:
+    """The PERK analogue of claim_reward -- same lock-UserReward-first,
+    idempotent-replay-under-lock discipline, minus any variant/inventory
+    work (there's nothing to ship). See PerkRedemption's docstring for why
+    this is a separate model/flow rather than reusing RewardClaim.
+    """
+    if reward_definition.reward_type != RewardDefinition.RewardType.PERK:
+        raise ValidationError(NOT_PERK_MSG)
+
+    _check_reward_protection(user, reward_definition)
+
+    with transaction.atomic():
+        user_reward = (
+            UserReward.objects.select_for_update()
+            .filter(user=user, reward_definition=reward_definition)
+            .first()
+        )
+        if user_reward is None:
+            raise PermissionDenied(NOT_EARNED_MSG)
+
+        existing_redemption = PerkRedemption.objects.filter(user_reward=user_reward).first()
+        if existing_redemption is not None:
+            return PerkRedemptionResult(
+                redemption=existing_redemption, created=False, redemption_code=None
+            )
+
+        if user_reward.status != RewardStatus.EARNED:
+            raise ValidationError(NO_LONGER_AVAILABLE_MSG)
+
+        plaintext_code = _generate_redemption_code()
+        try:
+            with transaction.atomic():
+                redemption = PerkRedemption.objects.create(
+                    user_reward=user_reward, status=RewardStatus.CLAIMED
+                )
+        except IntegrityError:
+            redemption = PerkRedemption.objects.get(user_reward=user_reward)
+            return PerkRedemptionResult(redemption=redemption, created=False, redemption_code=None)
+
+        user_reward.status = RewardStatus.CLAIMED
+        user_reward.claimed_at = timezone.now()
+        user_reward.claim_code_hash = _hash_redemption_code(plaintext_code)
+        user_reward.save(update_fields=["status", "claimed_at", "claim_code_hash", "updated_at"])
+
+    return PerkRedemptionResult(redemption=redemption, created=True, redemption_code=plaintext_code)
+
+
+def verify_perk_redemption(*, actor, gym, code):
+    """Gym staff confirming a member's perk was actually handed over in
+    person. Scoped to `gym` -- a gym's own staff can only verify codes for
+    that gym's own perks, never another gym's. The failure message is
+    deliberately generic regardless of *why* it failed (wrong gym / already
+    used / never existed) -- same fraud-sensitive-generic-message reasoning
+    as _check_reward_protection.
+    """
+    gym_services.assert_gym_staff(actor, gym)
+    code_hash = _hash_redemption_code(code)
+
+    with transaction.atomic():
+        user_reward = (
+            UserReward.objects.select_for_update()
+            .filter(
+                claim_code_hash=code_hash,
+                reward_definition__gym=gym,
+                reward_definition__reward_type=RewardDefinition.RewardType.PERK,
+            )
+            .first()
+        )
+        if user_reward is None:
+            raise ValidationError(INVALID_REDEMPTION_CODE_MSG)
+
+        redemption = (
+            PerkRedemption.objects.select_for_update().filter(user_reward=user_reward).first()
+        )
+        if redemption is None or redemption.status != RewardStatus.CLAIMED:
+            raise ValidationError(INVALID_REDEMPTION_CODE_MSG)
+
+        previous_state = {"status": redemption.status}
+        redemption.status = RewardStatus.DELIVERED
+        redemption.verified_by = actor
+        redemption.verified_at = timezone.now()
+        redemption.save(update_fields=["status", "verified_by", "verified_at", "updated_at"])
+        UserReward.objects.filter(pk=user_reward.pk).update(
+            status=RewardStatus.DELIVERED, updated_at=timezone.now()
+        )
+
+    audit_services.record(
+        actor=actor,
+        action="perk_redemption.verify",
+        entity=redemption,
+        previous_state=previous_state,
+        new_state={"status": redemption.status},
+    )
+    return redemption
+
+
+@dataclass
+class RewardProgress:
+    reward_definition: RewardDefinition
+    user_reward: UserReward | None
+    days_remaining: int
+
+
+def member_rewards_overview(user):
+    """Powers the member dashboard's rewards section: every ACTIVE reward
+    the user can see (their gym's approved tiers + platform-wide ones),
+    each paired with their own progress/earned status.
+    """
+    from apps.streaks.models import UserStreak  # local import, same reasoning as the CheckIn import above
+
+    streak, _ = UserStreak.objects.get_or_create(user=user)
+    reward_definitions = (
+        RewardDefinition.objects.filter(status=RewardDefinition.Status.ACTIVE)
+        .filter(reward_gym_scope_filter(user))
+        .select_related("product", "gym")
+        .order_by("required_streak")
+    )
+    earned_by_id = {
+        ur.reward_definition_id: ur
+        for ur in UserReward.objects.filter(user=user).select_related("reward_definition")
+    }
+    return [
+        RewardProgress(
+            reward_definition=reward_definition,
+            user_reward=earned_by_id.get(reward_definition.id),
+            days_remaining=max(reward_definition.required_streak - streak.current_streak, 0),
+        )
+        for reward_definition in reward_definitions
+    ]
 
 
 def sync_user_reward_status(claim):
@@ -537,5 +714,121 @@ def admin_update_reward_definition(*, actor, reward_definition, **fields):
         entity=reward_definition,
         previous_state=previous_state,
         new_state=model_to_dict(reward_definition),
+    )
+    return reward_definition
+
+
+# --- Gym-proposed rewards ----------------------------------------------------
+# A gym owner proposes a reward tier for their own gym; platform staff
+# approves/rejects it (below); once approved or rejected, only staff can
+# edit it further -- update_gym_reward enforces that, not just a UI hint.
+
+
+def validate_reward_fulfillment(*, reward_type, product, gym):
+    """The MERCHANDISE/PERK invariant, shared by the gym-facing and
+    admin-facing serializers so the rule can't drift between them: a
+    merchandise reward needs a shippable product; a perk reward has none
+    (nothing to ship) and must belong to a gym (someone has to be able to
+    verify the in-person handover).
+    """
+    if reward_type == RewardDefinition.RewardType.MERCHANDISE and product is None:
+        raise ValidationError("A merchandise reward requires a product.")
+    if reward_type == RewardDefinition.RewardType.PERK:
+        if product is not None:
+            raise ValidationError("A perk reward cannot have a product.")
+        if gym is None:
+            raise ValidationError("A perk reward must belong to a gym.")
+
+
+def propose_gym_reward(*, actor, gym, **fields):
+    gym_services.assert_gym_role(actor, gym, [GymMembership.Role.OWNER])
+    validate_reward_fulfillment(
+        reward_type=fields.get("reward_type", RewardDefinition.RewardType.MERCHANDISE),
+        product=fields.get("product"),
+        gym=gym,
+    )
+    reward_definition = RewardDefinition.objects.create(
+        gym=gym, status=RewardDefinition.Status.PENDING, **fields
+    )
+    audit_services.record(
+        actor=actor,
+        action="reward_definition.propose",
+        entity=reward_definition,
+        new_state=model_to_dict(reward_definition),
+    )
+    return reward_definition
+
+
+def update_gym_reward(*, actor, gym, reward_definition, **fields):
+    """Owner-only, and only while still PENDING -- the literal "gym cannot
+    edit it afterward" rule. Once staff has approved or rejected it, this
+    raises regardless of who's asking.
+    """
+    gym_services.assert_gym_role(actor, gym, [GymMembership.Role.OWNER])
+    if reward_definition.status != RewardDefinition.Status.PENDING:
+        raise ValidationError("Only a pending reward proposal can be edited by its gym.")
+
+    validate_reward_fulfillment(
+        reward_type=fields.get("reward_type", reward_definition.reward_type),
+        product=fields.get("product", reward_definition.product),
+        gym=gym,
+    )
+
+    previous_state = model_to_dict(reward_definition)
+    for field, value in fields.items():
+        setattr(reward_definition, field, value)
+    reward_definition.save()
+    audit_services.record(
+        actor=actor,
+        action="reward_definition.gym_update",
+        entity=reward_definition,
+        previous_state=previous_state,
+        new_state=model_to_dict(reward_definition),
+    )
+    return reward_definition
+
+
+def list_gym_rewards(*, actor, gym):
+    gym_services.assert_gym_staff(actor, gym)
+    return (
+        RewardDefinition.objects.filter(gym=gym)
+        .select_related("product")
+        .order_by("-created_at")
+    )
+
+
+def admin_approve_reward_definition(*, actor, reward_definition):
+    """Mirrors apps.gyms.services.admin_approve_gym exactly."""
+    if reward_definition.status != RewardDefinition.Status.PENDING:
+        raise ValidationError("Only pending reward proposals can be approved.")
+
+    previous_state = {"status": reward_definition.status}
+    reward_definition.status = RewardDefinition.Status.ACTIVE
+    reward_definition.save(update_fields=["status", "updated_at"])
+    audit_services.record(
+        actor=actor,
+        action="reward_definition.approve",
+        entity=reward_definition,
+        previous_state=previous_state,
+        new_state={"status": reward_definition.status},
+    )
+    return reward_definition
+
+
+def admin_reject_reward_definition(*, actor, reward_definition, reason=""):
+    """Mirrors apps.gyms.services.admin_reject_gym exactly."""
+    if reward_definition.status != RewardDefinition.Status.PENDING:
+        raise ValidationError("Only pending reward proposals can be rejected.")
+
+    previous_state = {"status": reward_definition.status}
+    reward_definition.status = RewardDefinition.Status.REJECTED
+    reward_definition.save(update_fields=["status", "updated_at"])
+    audit_services.record(
+        actor=actor,
+        action="reward_definition.reject",
+        entity=reward_definition,
+        previous_state=previous_state,
+        new_state={"status": reward_definition.status},
+        reason=reason,
     )
     return reward_definition

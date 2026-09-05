@@ -142,6 +142,8 @@ REST_FRAMEWORK = {
         "gym_device_qr": "10/min",
         "checkin_create": "20/hour",
         "reward_claim": "10/hour",
+        "reward_redeem": "10/hour",
+        "gym_reward_redemption_verify": "30/min",
         "gym_staff_invite_create": "20/hour",
         "gym_staff_invite_accept": "20/hour",
     },
