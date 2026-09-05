@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 
-import { cn } from "@/lib/utils";
+import { cn, toUtcIsoDate } from "@/lib/utils";
 import { apiWeekdayToJsDay } from "@/lib/rest-day";
 import type { CalendarDay } from "@/types/api";
 
@@ -44,7 +44,7 @@ export function StreakCalendar({
   const { columns, monthLabels } = useMemo(() => {
     if (days.length === 0) return { columns: [] as Cell[][], monthLabels: [] as { index: number; label: string }[] };
 
-    const todayIso = new Date().toISOString().slice(0, 10);
+    const todayIso = toUtcIsoDate(new Date());
     const firstDate = new Date(`${days[0].date}T00:00:00`);
     const leadingBlanks = firstDate.getDay(); // 0 (Sun) .. 6 (Sat)
 

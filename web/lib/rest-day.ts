@@ -22,7 +22,12 @@ export function apiWeekdayToJsDay(apiWeekday: number): number {
 }
 
 export function todayApiWeekday(date: Date = new Date()): number {
-  return jsDayToApiWeekday(date.getDay());
+  // getUTCDay(), not getDay() -- the backend computes gym_day (and
+  // therefore every weekday it stores/compares) from UTC time
+  // (TIME_ZONE=UTC), so "today's weekday" has to be read the same way or
+  // it silently disagrees with the server right at the UTC day boundary
+  // for any viewer not in a UTC-aligned timezone.
+  return jsDayToApiWeekday(date.getUTCDay());
 }
 
 export function weekdayLabel(day: number): string {

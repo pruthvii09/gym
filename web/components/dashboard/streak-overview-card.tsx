@@ -7,14 +7,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { todayApiWeekday } from "@/lib/rest-day";
+import { toUtcIsoDate } from "@/lib/utils";
 import type { CalendarResponse, UserRestDay } from "@/types/api";
-
-function toIsoDate(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
 
 export function StreakOverviewCard({
   calendar,
@@ -30,8 +24,10 @@ export function StreakOverviewCard({
     !!streak && streak.current_streak > 0 && streak.current_streak === streak.longest_streak;
   // last_activity_date is the same gym-day (grace-period-aware) value the
   // streak calculation itself uses, so this is the most accurate "have they
-  // already banked today" signal available without a dedicated endpoint.
-  const checkedInToday = !!streak && streak.last_activity_date === toIsoDate(new Date());
+  // already banked today" signal available without a dedicated endpoint --
+  // compared via toUtcIsoDate (not a browser-local date string) since the
+  // backend computes it entirely in UTC.
+  const checkedInToday = !!streak && streak.last_activity_date === toUtcIsoDate(new Date());
   const isRestDayToday = restDay?.day_of_week === todayApiWeekday();
   const streakAtRisk = !!streak && streak.current_streak > 0 && !checkedInToday && !isRestDayToday;
 

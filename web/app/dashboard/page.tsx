@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Flame, LogOut, Plus, QrCode, ShieldCheck } from "lucide-react";
+import { Dumbbell, Flame, LogOut, Plus, QrCode, ShieldCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,11 +12,13 @@ import { CheckinActivityCard } from "@/components/dashboard/checkin-activity-car
 import { RecentCheckinsCard } from "@/components/dashboard/recent-checkins-card";
 import { RewardsCard } from "@/components/dashboard/rewards-card";
 import { RestDayCard } from "@/components/dashboard/rest-day-card";
+import { ActiveWorkoutBanner } from "@/components/dashboard/active-workout-banner";
 import { logout as logoutRequest } from "@/lib/api/auth";
 import { listMyGymMemberships } from "@/lib/api/gyms";
 import { getMyCalendar, getMyRestDay } from "@/lib/api/streaks";
 import { clearTokens, getRefreshToken } from "@/lib/auth/session";
 import { useCurrentUser } from "@/lib/auth/use-current-user";
+import { toUtcIsoDate } from "@/lib/utils";
 import type { CalendarResponse, GymMembershipSummary, GymStatus, MeResponse, UserRestDay } from "@/types/api";
 
 // Active gyms first (the ones you'd actually jump into day to day), then
@@ -29,13 +31,7 @@ const STATUS_SORT_ORDER: Record<GymStatus, number> = {
 };
 
 const CALENDAR_DAYS = 364; // 52 weeks -- the classic GitHub-graph span
-
-function toIsoDate(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 function MemberDashboard({ me, displayName }: { me: MeResponse; displayName: string }) {
   const [calendar, setCalendar] = useState<CalendarResponse | null>(null);
@@ -43,12 +39,14 @@ function MemberDashboard({ me, displayName }: { me: MeResponse; displayName: str
 
   // Shared by StreakOverviewCard (at-risk banner) and CheckinActivityCard
   // (calendar row marker) -- fetched once here rather than by each card,
-  // unlike the other cards below which are fully self-contained.
+  // unlike the other cards below which are fully self-contained. Computed
+  // via absolute-time subtraction + toUtcIsoDate (not setDate + local
+  // getters) so the requested range's day boundaries match the backend's
+  // UTC ones, not the viewer's local calendar.
   const loadShared = () => {
     const end = new Date();
-    const start = new Date();
-    start.setDate(end.getDate() - (CALENDAR_DAYS - 1));
-    getMyCalendar(toIsoDate(start), toIsoDate(end))
+    const start = new Date(end.getTime() - (CALENDAR_DAYS - 1) * DAY_MS);
+    getMyCalendar(toUtcIsoDate(start), toUtcIsoDate(end))
       .then(setCalendar)
       .catch(() => setCalendar(null));
     getMyRestDay()
@@ -72,12 +70,20 @@ function MemberDashboard({ me, displayName }: { me: MeResponse; displayName: str
           </p>
         </div>
         {me.gym ? (
-          <Button variant="gradient" className="shrink-0" render={<Link href="/checkin" />}>
-            <QrCode />
-            Scan to check in
-          </Button>
+          <div className="flex shrink-0 gap-2">
+            <Button variant="outline" render={<Link href="/workouts" />}>
+              <Dumbbell />
+              Workouts
+            </Button>
+            <Button variant="gradient" render={<Link href="/checkin" />}>
+              <QrCode />
+              Scan to check in
+            </Button>
+          </div>
         ) : null}
       </div>
+
+      <ActiveWorkoutBanner />
 
       <StreakOverviewCard calendar={calendar} restDay={restDay} hasGym={!!me.gym} />
 
