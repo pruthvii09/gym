@@ -1,0 +1,85 @@
+# Production deploy: pulls prebuilt images from GHCR (built by CI) instead
+# of building from source on the server -- a micro EC2 instance doesn't have
+# the RAM/CPU to comfortably build both images itself. Only Caddy is
+# published to the host; everything else is reachable only inside the
+# compose network, matching the "just one public entrypoint" design in
+# ./Caddyfile.
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  web:
+    image: ${IMAGE_API}
+    restart: unless-stopped
+    command: gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 2 --timeout 60
+    env_file: .env
+    environment:
+      - RUN_MIGRATIONS=true
+    expose:
+      - "8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # Nothing schedules periodic tasks today (CELERY_BEAT_SCHEDULE is empty) --
+  # celery_beat is deliberately left out of the prod stack to save RAM on a
+  # small instance. Add it back if/when a periodic task is introduced.
+  celery_worker:
+    image: ${IMAGE_API}
+    restart: unless-stopped
+    command: celery -A config worker -l info --concurrency=2
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  frontend:
+    image: ${IMAGE_WEB}
+    restart: unless-stopped
+    expose:
+      - "3000"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+      - frontend
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:

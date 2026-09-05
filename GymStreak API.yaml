@@ -1,0 +1,3007 @@
+openapi: 3.0.3
+info:
+  title: GymStreak API
+  version: 1.0.0
+  description: GymStreak backend API
+paths:
+  /api/v1/admin/audit-logs/:
+    get:
+      operationId: api_v1_admin_audit_logs_list
+      description: |-
+        Read-only, admin-only. No write path exists on purpose -- an audit
+        log that could be edited via the API it's supposed to be auditing isn't
+        an audit log.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAuditLogList'
+          description: ''
+  /api/v1/admin/challenges/:
+    get:
+      operationId: api_v1_admin_challenges_retrieve
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: api_v1_admin_challenges_create
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/challenges/{id}/:
+    get:
+      operationId: api_v1_admin_challenges_retrieve_2
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+    patch:
+      operationId: api_v1_admin_challenges_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/checkins/:
+    get:
+      operationId: api_v1_admin_checkins_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAdminCheckInList'
+          description: ''
+  /api/v1/admin/checkins/{id}/:
+    get:
+      operationId: api_v1_admin_checkins_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminCheckIn'
+          description: ''
+  /api/v1/admin/checkins/{id}/resolve/:
+    post:
+      operationId: api_v1_admin_checkins_resolve_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/fraud-events/:
+    get:
+      operationId: api_v1_admin_fraud_events_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAdminFraudEventList'
+          description: ''
+  /api/v1/admin/fraud-reviews/:
+    get:
+      operationId: api_v1_admin_fraud_reviews_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAdminFraudReviewList'
+          description: ''
+  /api/v1/admin/fraud-reviews/{id}/:
+    get:
+      operationId: api_v1_admin_fraud_reviews_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminFraudReview'
+          description: ''
+  /api/v1/admin/fraud-reviews/{id}/resolve/:
+    post:
+      operationId: api_v1_admin_fraud_reviews_resolve_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/gym-devices/:
+    get:
+      operationId: api_v1_admin_gym_devices_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAdminGymCheckinDeviceList'
+          description: ''
+  /api/v1/admin/gym-devices/{id}/:
+    get:
+      operationId: api_v1_admin_gym_devices_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminGymCheckinDevice'
+          description: ''
+  /api/v1/admin/gym-devices/{id}/status/:
+    post:
+      operationId: api_v1_admin_gym_devices_status_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/gym-memberships/:
+    get:
+      operationId: api_v1_admin_gym_memberships_retrieve
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: api_v1_admin_gym_memberships_create
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/gyms/:
+    get:
+      operationId: api_v1_admin_gyms_retrieve
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: api_v1_admin_gyms_create
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/gyms/{id}/:
+    get:
+      operationId: api_v1_admin_gyms_retrieve_2
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+    patch:
+      operationId: api_v1_admin_gyms_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/inventory-transactions/:
+    get:
+      operationId: api_v1_admin_inventory_transactions_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAdminInventoryTransactionList'
+          description: ''
+  /api/v1/admin/inventory/reserved/:
+    get:
+      operationId: api_v1_admin_inventory_reserved_retrieve
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/inventory/shipped/:
+    get:
+      operationId: api_v1_admin_inventory_shipped_retrieve
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/product-variants/:
+    get:
+      operationId: api_v1_admin_product_variants_retrieve
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: api_v1_admin_product_variants_create
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/product-variants/{id}/:
+    get:
+      operationId: api_v1_admin_product_variants_retrieve_2
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminProductVariant'
+          description: ''
+  /api/v1/admin/product-variants/{id}/adjust/:
+    post:
+      operationId: api_v1_admin_product_variants_adjust_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/product-variants/{id}/restock/:
+    post:
+      operationId: api_v1_admin_product_variants_restock_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/products/:
+    get:
+      operationId: api_v1_admin_products_retrieve
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: api_v1_admin_products_create
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/products/{id}/:
+    get:
+      operationId: api_v1_admin_products_retrieve_2
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+    patch:
+      operationId: api_v1_admin_products_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/reward-claims/:
+    get:
+      operationId: api_v1_admin_reward_claims_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAdminRewardClaimList'
+          description: ''
+  /api/v1/admin/reward-claims/{id}/:
+    get:
+      operationId: api_v1_admin_reward_claims_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminRewardClaim'
+          description: ''
+  /api/v1/admin/reward-claims/{id}/transition/:
+    post:
+      operationId: api_v1_admin_reward_claims_transition_create
+      description: |-
+        The fulfillment state machine's only entry point over the API:
+        CLAIMED -> PROCESSING -> SHIPPED -> DELIVERED, or CANCELLED before
+        shipping. See apps.rewards.services.CLAIM_ALLOWED_TRANSITIONS.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/reward-definitions/:
+    get:
+      operationId: api_v1_admin_reward_definitions_retrieve
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: api_v1_admin_reward_definitions_create
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/reward-definitions/{id}/:
+    get:
+      operationId: api_v1_admin_reward_definitions_retrieve_2
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+    patch:
+      operationId: api_v1_admin_reward_definitions_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/shipments/:
+    get:
+      operationId: api_v1_admin_shipments_list
+      description: |-
+        'Shipping' as an admin area: claims that have moved past pure
+        reservation, i.e. everything staff are actively fulfilling or have
+        already fulfilled. Read-only view over the same RewardClaim data --
+        AdminRewardClaimTransitionView remains the one place shipping state
+        actually changes.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAdminRewardClaimList'
+          description: ''
+  /api/v1/admin/streak-policy/:
+    get:
+      operationId: api_v1_admin_streak_policy_retrieve
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+    patch:
+      operationId: api_v1_admin_streak_policy_partial_update
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/streaks/:
+    get:
+      operationId: api_v1_admin_streaks_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAdminUserStreakList'
+          description: ''
+  /api/v1/admin/streaks/{user_id}/:
+    get:
+      operationId: api_v1_admin_streaks_retrieve
+      description: |-
+        Looked up by user id, not the UserStreak row's own id -- an admin
+        thinks in terms of "this user's streak", and a user has at most one.
+      parameters:
+      - in: path
+        name: user_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminUserStreak'
+          description: ''
+  /api/v1/admin/streaks/{user_id}/rebuild/:
+    post:
+      operationId: api_v1_admin_streaks_rebuild_create
+      parameters:
+      - in: path
+        name: user_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/streaks/rebuild-all/:
+    post:
+      operationId: api_v1_admin_streaks_rebuild_all_create
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/users/:
+    get:
+      operationId: api_v1_admin_users_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAdminUserList'
+          description: ''
+  /api/v1/admin/users/{id}/:
+    get:
+      operationId: api_v1_admin_users_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminUser'
+          description: ''
+  /api/v1/admin/users/{id}/block-reward-claims/:
+    post:
+      operationId: api_v1_admin_users_block_reward_claims_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/users/{id}/status/:
+    post:
+      operationId: api_v1_admin_users_status_create
+      description: 'Suspend (`is_active: false`) or restore (`is_active: true`) a
+        user.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/auth/email/send-verification/:
+    post:
+      operationId: api_v1_auth_email_send_verification_create
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/auth/email/verify/:
+    post:
+      operationId: api_v1_auth_email_verify_create
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/auth/login/:
+    post:
+      operationId: api_v1_auth_login_create
+      description: |-
+        Takes a set of user credentials and returns an access and refresh JSON web
+        token pair to prove the authentication of those credentials.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Login'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Login'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Login'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Login'
+          description: ''
+  /api/v1/auth/logout/:
+    post:
+      operationId: api_v1_auth_logout_create
+      description: |-
+        Takes a token and blacklists it. Must be used with the
+        `rest_framework_simplejwt.token_blacklist` app installed.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenBlacklist'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenBlacklist'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenBlacklist'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenBlacklist'
+          description: ''
+  /api/v1/auth/password/forgot/:
+    post:
+      operationId: api_v1_auth_password_forgot_create
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/auth/password/reset/:
+    post:
+      operationId: api_v1_auth_password_reset_create
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/auth/refresh/:
+    post:
+      operationId: api_v1_auth_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/v1/auth/register/:
+    post:
+      operationId: api_v1_auth_register_create
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Register'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Register'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Register'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Register'
+          description: ''
+  /api/v1/checkins/:
+    post:
+      operationId: api_v1_checkins_create
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/gym-devices/:
+    post:
+      operationId: api_v1_gym_devices_create
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/gym-devices/{id}/qr/:
+    get:
+      operationId: api_v1_gym_devices_qr_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/gym-devices/{id}/rotate/:
+    post:
+      operationId: api_v1_gym_devices_rotate_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/gyms/:
+    get:
+      operationId: api_v1_gyms_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedGymList'
+          description: ''
+    post:
+      operationId: api_v1_gyms_create
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GymCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/GymCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/GymCreate'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GymCreate'
+          description: ''
+  /api/v1/gyms/{id}/:
+    get:
+      operationId: api_v1_gyms_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Gym'
+          description: ''
+  /api/v1/me/:
+    get:
+      operationId: api_v1_me_retrieve
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    put:
+      operationId: api_v1_me_update
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/User'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/User'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    patch:
+      operationId: api_v1_me_partial_update
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProfileUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProfileUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProfileUpdate'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileUpdate'
+          description: ''
+  /api/v1/me/calendar/:
+    get:
+      operationId: api_v1_me_calendar_retrieve
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/me/checkins/:
+    get:
+      operationId: api_v1_me_checkins_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCheckinList'
+          description: ''
+  /api/v1/me/gym-memberships/:
+    get:
+      operationId: api_v1_me_gym_memberships_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedGymMembershipList'
+          description: ''
+  /api/v1/me/notifications/:
+    get:
+      operationId: api_v1_me_notifications_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedNotificationList'
+          description: ''
+  /api/v1/me/notifications/{id}/read/:
+    post:
+      operationId: api_v1_me_notifications_read_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/me/rewards/:
+    get:
+      operationId: api_v1_me_rewards_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUserRewardListList'
+          description: ''
+  /api/v1/me/rewards/{id}/:
+    get:
+      operationId: api_v1_me_rewards_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserRewardDetail'
+          description: ''
+  /api/v1/me/streak/:
+    get:
+      operationId: api_v1_me_streak_retrieve
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserStreak'
+          description: ''
+  /api/v1/rewards/:
+    get:
+      operationId: api_v1_rewards_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRewardDefinitionList'
+          description: ''
+  /api/v1/rewards/{id}/:
+    get:
+      operationId: api_v1_rewards_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RewardDefinition'
+          description: ''
+  /api/v1/rewards/{id}/claim/:
+    post:
+      operationId: api_v1_rewards_claim_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /health/:
+    get:
+      operationId: health_retrieve
+      description: Unauthenticated health check verifying DB and Redis connectivity.
+      tags:
+      - health
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+components:
+  schemas:
+    AdminCheckIn:
+      type: object
+      description: |-
+        Unlike the member-facing CheckinSerializer, admins ARE shown
+        risk_score -- the "don't hand out a tuning oracle" reasoning only
+        applies to the client whose own behavior is being scored.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        user:
+          type: string
+          format: uuid
+          readOnly: true
+        user_email:
+          type: string
+          format: email
+          readOnly: true
+        gym:
+          type: string
+          format: uuid
+          readOnly: true
+        gym_name:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusE34Enum'
+          readOnly: true
+        verification_method:
+          allOf:
+          - $ref: '#/components/schemas/VerificationMethodEnum'
+          readOnly: true
+        risk_score:
+          type: integer
+          readOnly: true
+        checked_in_at:
+          type: string
+          format: date-time
+          readOnly: true
+        latitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+          readOnly: true
+          nullable: true
+        longitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+          readOnly: true
+          nullable: true
+        location_accuracy:
+          type: integer
+          readOnly: true
+          nullable: true
+        idempotency_key:
+          type: string
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - checked_in_at
+      - created_at
+      - gym
+      - gym_name
+      - id
+      - idempotency_key
+      - latitude
+      - location_accuracy
+      - longitude
+      - risk_score
+      - status
+      - user
+      - user_email
+      - verification_method
+    AdminFraudEvent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        user:
+          type: string
+          format: uuid
+          readOnly: true
+        user_email:
+          type: string
+          format: email
+          readOnly: true
+        checkin:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        review:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        event_type:
+          allOf:
+          - $ref: '#/components/schemas/EventTypeEnum'
+          readOnly: true
+        details:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - checkin
+      - created_at
+      - details
+      - event_type
+      - id
+      - review
+      - user
+      - user_email
+    AdminFraudReview:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        user:
+          type: string
+          format: uuid
+          readOnly: true
+        user_email:
+          type: string
+          format: email
+          readOnly: true
+        risk_level:
+          allOf:
+          - $ref: '#/components/schemas/RiskLevelEnum'
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/AdminFraudReviewStatusEnum'
+          readOnly: true
+        reason:
+          type: string
+          readOnly: true
+        resolved_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        resolved_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        resolved_by_email:
+          type: string
+          format: email
+          readOnly: true
+        resolution_notes:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - reason
+      - resolution_notes
+      - resolved_at
+      - resolved_by
+      - resolved_by_email
+      - risk_level
+      - status
+      - updated_at
+      - user
+      - user_email
+    AdminFraudReviewStatusEnum:
+      enum:
+      - open
+      - approved
+      - rejected
+      type: string
+      description: |-
+        * `open` - Open
+        * `approved` - Approved
+        * `rejected` - Rejected
+    AdminGymCheckinDevice:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        gym:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        device_code:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/AdminGymCheckinDeviceStatusEnum'
+          readOnly: true
+        last_rotation_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - device_code
+      - gym
+      - id
+      - last_rotation_at
+      - name
+      - status
+      - updated_at
+    AdminGymCheckinDeviceStatusEnum:
+      enum:
+      - active
+      - disabled
+      type: string
+      description: |-
+        * `active` - Active
+        * `disabled` - Disabled
+    AdminInventoryTransaction:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        variant:
+          type: string
+          format: uuid
+          readOnly: true
+        product_name:
+          type: string
+          readOnly: true
+        variant_size:
+          type: string
+          readOnly: true
+        quantity:
+          type: integer
+          readOnly: true
+        type:
+          allOf:
+          - $ref: '#/components/schemas/AdminInventoryTransactionTypeEnum'
+          readOnly: true
+        reference:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - product_name
+      - quantity
+      - reference
+      - type
+      - variant
+      - variant_size
+    AdminInventoryTransactionTypeEnum:
+      enum:
+      - restock
+      - reserve
+      - release
+      - ship
+      - adjustment
+      type: string
+      description: |-
+        * `restock` - Restock
+        * `reserve` - Reserve
+        * `release` - Release
+        * `ship` - Ship
+        * `adjustment` - Adjustment
+    AdminProductVariant:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        product:
+          type: string
+          format: uuid
+        product_name:
+          type: string
+          readOnly: true
+        size:
+          type: string
+          maxLength: 32
+        stock:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - product
+      - product_name
+      - size
+      - stock
+      - updated_at
+    AdminRewardClaim:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        user_reward:
+          type: string
+          format: uuid
+          readOnly: true
+        user_email:
+          type: string
+          format: email
+          readOnly: true
+        reward_definition_name:
+          type: string
+          readOnly: true
+        variant:
+          type: string
+          format: uuid
+          readOnly: true
+        shipping_address:
+          readOnly: true
+        tracking_number:
+          type: string
+          readOnly: true
+        carrier:
+          type: string
+          readOnly: true
+        shipped_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        delivered_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/Status8eaEnum'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - carrier
+      - created_at
+      - delivered_at
+      - id
+      - reward_definition_name
+      - shipped_at
+      - shipping_address
+      - status
+      - tracking_number
+      - updated_at
+      - user_email
+      - user_reward
+      - variant
+    AdminUser:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+        first_name:
+          type: string
+          readOnly: true
+        last_name:
+          type: string
+          readOnly: true
+        phone:
+          type: string
+          readOnly: true
+          nullable: true
+        email_verified:
+          type: boolean
+          readOnly: true
+        phone_verified:
+          type: boolean
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+        is_staff:
+          type: boolean
+          readOnly: true
+        last_login:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - email
+      - email_verified
+      - first_name
+      - id
+      - is_active
+      - is_staff
+      - last_login
+      - last_name
+      - phone
+      - phone_verified
+      - updated_at
+    AdminUserStreak:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        user:
+          type: string
+          format: uuid
+          readOnly: true
+        user_email:
+          type: string
+          format: email
+          readOnly: true
+        current_streak:
+          type: integer
+          readOnly: true
+        longest_streak:
+          type: integer
+          readOnly: true
+        last_activity_date:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - current_streak
+      - id
+      - last_activity_date
+      - longest_streak
+      - updated_at
+      - user
+      - user_email
+    AuditLog:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        actor:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        actor_email:
+          type: string
+          format: email
+          readOnly: true
+        action:
+          type: string
+          readOnly: true
+        entity_type:
+          type: string
+          readOnly: true
+        entity_id:
+          type: string
+          readOnly: true
+        previous_state:
+          readOnly: true
+          nullable: true
+        new_state:
+          readOnly: true
+          nullable: true
+        reason:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - action
+      - actor
+      - actor_email
+      - created_at
+      - entity_id
+      - entity_type
+      - id
+      - new_state
+      - previous_state
+      - reason
+    Checkin:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        gym:
+          type: string
+          format: uuid
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusE34Enum'
+          readOnly: true
+        verification_method:
+          allOf:
+          - $ref: '#/components/schemas/VerificationMethodEnum'
+          readOnly: true
+        checked_in_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - checked_in_at
+      - created_at
+      - gym
+      - id
+      - status
+      - verification_method
+    EventTypeEnum:
+      enum:
+      - qr_reuse
+      - gps_mismatch
+      - too_many_checkins
+      - impossible_travel
+      - multiple_accounts_device
+      - suspicious_pattern
+      - device_anomaly
+      - suspicious_account_creation
+      - suspicious_reward_claim
+      type: string
+      description: |-
+        * `qr_reuse` - QR reuse
+        * `gps_mismatch` - GPS mismatch
+        * `too_many_checkins` - Too many check-ins
+        * `impossible_travel` - Impossible travel
+        * `multiple_accounts_device` - Multiple accounts on device
+        * `suspicious_pattern` - Suspicious pattern
+        * `device_anomaly` - Device anomaly
+        * `suspicious_account_creation` - Suspicious account creation
+        * `suspicious_reward_claim` - Suspicious reward claim
+    Gym:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        description:
+          type: string
+          readOnly: true
+        address:
+          type: string
+          readOnly: true
+        city:
+          type: string
+          readOnly: true
+        state:
+          type: string
+          readOnly: true
+        country:
+          type: string
+          readOnly: true
+        postal_code:
+          type: string
+          readOnly: true
+        latitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+          readOnly: true
+        longitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+          readOnly: true
+        checkin_radius_meters:
+          type: integer
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusA3eEnum'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - address
+      - checkin_radius_meters
+      - city
+      - country
+      - created_at
+      - description
+      - id
+      - latitude
+      - longitude
+      - name
+      - postal_code
+      - state
+      - status
+      - updated_at
+    GymCreate:
+      type: object
+      description: |-
+        Member-facing self-service gym creation -- see services.create_owned_gym.
+        Deliberately omits `status`: a self-created gym is always active on
+        creation (the model's own default); only admins can later deactivate one
+        (AdminGymSerializer / PATCH /admin/gyms/{id}/).
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        address:
+          type: string
+          maxLength: 255
+        city:
+          type: string
+          maxLength: 100
+        state:
+          type: string
+          maxLength: 100
+        country:
+          type: string
+          maxLength: 100
+        postal_code:
+          type: string
+          maxLength: 20
+        latitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+        longitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+        checkin_radius_meters:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+      required:
+      - address
+      - city
+      - country
+      - id
+      - latitude
+      - longitude
+      - name
+    GymMembership:
+      type: object
+      description: |-
+        Backs GET /api/v1/me/gym-memberships/ -- the member-facing "which
+        gyms am I in" list that has no equivalent elsewhere (only the
+        is_staff-gated admin API can list memberships otherwise).
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        gym:
+          allOf:
+          - $ref: '#/components/schemas/Gym'
+          readOnly: true
+        role:
+          allOf:
+          - $ref: '#/components/schemas/RoleEnum'
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusA3eEnum'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - gym
+      - id
+      - role
+      - status
+    Login:
+      type: object
+      properties:
+        device_hash:
+          type: string
+          maxLength: 255
+        platform:
+          $ref: '#/components/schemas/PlatformEnum'
+        email:
+          type: string
+          writeOnly: true
+        password:
+          type: string
+          writeOnly: true
+      required:
+      - email
+      - password
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        type:
+          allOf:
+          - $ref: '#/components/schemas/NotificationTypeEnum'
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        message:
+          type: string
+          readOnly: true
+        read_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - message
+      - read_at
+      - title
+      - type
+    NotificationTypeEnum:
+      enum:
+      - streak_milestone
+      - reward_unlocked
+      - reward_shipped
+      - challenge
+      - system
+      type: string
+      description: |-
+        * `streak_milestone` - Streak milestone
+        * `reward_unlocked` - Reward unlocked
+        * `reward_shipped` - Reward shipped
+        * `challenge` - Challenge
+        * `system` - System
+    PaginatedAdminCheckInList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminCheckIn'
+    PaginatedAdminFraudEventList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminFraudEvent'
+    PaginatedAdminFraudReviewList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminFraudReview'
+    PaginatedAdminGymCheckinDeviceList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminGymCheckinDevice'
+    PaginatedAdminInventoryTransactionList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminInventoryTransaction'
+    PaginatedAdminRewardClaimList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminRewardClaim'
+    PaginatedAdminUserList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminUser'
+    PaginatedAdminUserStreakList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminUserStreak'
+    PaginatedAuditLogList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditLog'
+    PaginatedCheckinList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Checkin'
+    PaginatedGymList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Gym'
+    PaginatedGymMembershipList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/GymMembership'
+    PaginatedNotificationList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Notification'
+    PaginatedRewardDefinitionList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/RewardDefinition'
+    PaginatedUserRewardListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserRewardList'
+    PatchedProfileUpdate:
+      type: object
+      properties:
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        phone:
+          type: string
+          nullable: true
+          pattern: ^\+?[0-9]{7,15}$
+          maxLength: 20
+    PlatformEnum:
+      enum:
+      - ios
+      - android
+      - web
+      - other
+      type: string
+      description: |-
+        * `ios` - iOS
+        * `android` - Android
+        * `web` - Web
+        * `other` - Other
+    ProductVariantLite:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        size:
+          type: string
+          maxLength: 32
+        in_stock:
+          type: string
+          readOnly: true
+      required:
+      - id
+      - in_stock
+      - size
+    ProfileUpdate:
+      type: object
+      properties:
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        phone:
+          type: string
+          nullable: true
+          pattern: ^\+?[0-9]{7,15}$
+          maxLength: 20
+    Register:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        password:
+          type: string
+          writeOnly: true
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        phone:
+          type: string
+          nullable: true
+          pattern: ^\+?[0-9]{7,15}$
+          maxLength: 20
+        gym_id:
+          type: string
+          format: uuid
+          writeOnly: true
+          nullable: true
+      required:
+      - email
+      - id
+      - password
+    RewardDefinition:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        description:
+          type: string
+          readOnly: true
+        reward_type:
+          allOf:
+          - $ref: '#/components/schemas/RewardTypeEnum'
+          readOnly: true
+        required_streak:
+          type: integer
+          readOnly: true
+        terms:
+          type: string
+          readOnly: true
+        variants:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductVariantLite'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - description
+      - id
+      - name
+      - required_streak
+      - reward_type
+      - terms
+      - variants
+    RewardTypeEnum:
+      enum:
+      - merchandise
+      type: string
+      description: '* `merchandise` - Merchandise'
+    RiskLevelEnum:
+      enum:
+      - low
+      - medium
+      - high
+      type: string
+      description: |-
+        * `low` - Low
+        * `medium` - Medium
+        * `high` - High
+    RoleEnum:
+      enum:
+      - member
+      - staff
+      - manager
+      - owner
+      type: string
+      description: |-
+        * `member` - Member
+        * `staff` - Staff
+        * `manager` - Manager
+        * `owner` - Owner
+    Status8eaEnum:
+      enum:
+      - earned
+      - claimed
+      - processing
+      - shipped
+      - delivered
+      - cancelled
+      type: string
+      description: |-
+        * `earned` - Earned
+        * `claimed` - Claimed
+        * `processing` - Processing
+        * `shipped` - Shipped
+        * `delivered` - Delivered
+        * `cancelled` - Cancelled
+    StatusA3eEnum:
+      enum:
+      - active
+      - inactive
+      type: string
+      description: |-
+        * `active` - Active
+        * `inactive` - Inactive
+    StatusE34Enum:
+      enum:
+      - pending
+      - verified
+      - rejected
+      - review
+      type: string
+      description: |-
+        * `pending` - Pending
+        * `verified` - Verified
+        * `rejected` - Rejected
+        * `review` - Review
+    TokenBlacklist:
+      type: object
+      properties:
+        refresh:
+          type: string
+          writeOnly: true
+      required:
+      - refresh
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+      required:
+      - access
+      - refresh
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+        first_name:
+          type: string
+          readOnly: true
+        last_name:
+          type: string
+          readOnly: true
+        phone:
+          type: string
+          readOnly: true
+          nullable: true
+        email_verified:
+          type: boolean
+          readOnly: true
+        phone_verified:
+          type: boolean
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - email
+      - email_verified
+      - first_name
+      - id
+      - last_name
+      - phone
+      - phone_verified
+    UserRewardDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        reward_definition:
+          allOf:
+          - $ref: '#/components/schemas/RewardDefinition'
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/Status8eaEnum'
+          readOnly: true
+        earned_at:
+          type: string
+          format: date-time
+          readOnly: true
+        claimed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        claim:
+          type: string
+          readOnly: true
+      required:
+      - claim
+      - claimed_at
+      - earned_at
+      - id
+      - reward_definition
+      - status
+    UserRewardList:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        reward_definition:
+          allOf:
+          - $ref: '#/components/schemas/RewardDefinition'
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/Status8eaEnum'
+          readOnly: true
+        earned_at:
+          type: string
+          format: date-time
+          readOnly: true
+        claimed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - claimed_at
+      - earned_at
+      - id
+      - reward_definition
+      - status
+    UserStreak:
+      type: object
+      properties:
+        current_streak:
+          type: integer
+          readOnly: true
+        longest_streak:
+          type: integer
+          readOnly: true
+        last_activity_date:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - current_streak
+      - last_activity_date
+      - longest_streak
+      - updated_at
+    VerificationMethodEnum:
+      enum:
+      - qr
+      - gps
+      - manual
+      - admin
+      type: string
+      description: |-
+        * `qr` - QR
+        * `gps` - GPS
+        * `manual` - Manual
+        * `admin` - Admin
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

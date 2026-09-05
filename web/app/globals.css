@@ -1,0 +1,158 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-sans);
+  --font-heading: var(--font-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-brand-start: var(--brand-start);
+  --color-brand-end: var(--brand-end);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/*
+  GymStreak — "Indigo Violet" palette. Light mode only by design (no .dark
+  block, no prefers-color-scheme override) — dark mode is a deliberately
+  deferred future phase, not an oversight.
+
+  Token names are theme-agnostic on purpose (--brand-start/--brand-end, not
+  a palette nickname) so swapping the palette again only means editing the
+  hex values below, not renaming classes throughout the app.
+*/
+:root {
+  --background: #fafafa;
+  --foreground: #18181b; /* ink */
+
+  --card: #ffffff;
+  --card-foreground: #18181b;
+  --popover: #ffffff;
+  --popover-foreground: #18181b;
+
+  /* Primary = indigo-500, the solid workhorse color. The indigo->purple */
+  /* gradient (--brand-start/--brand-end) is reserved for hero panels, */
+  /* the primary CTA, and streak/milestone highlights — see .bg-gradient-brand. */
+  --primary: #6366f1; /* indigo-500 */
+  --primary-foreground: #ffffff;
+  --brand-start: #6366f1; /* indigo-500 */
+  --brand-end: #a855f7; /* purple-500 */
+
+  --secondary: #f4f4f5;
+  --secondary-foreground: #18181b;
+
+  --muted: #f4f4f5;
+  --muted-foreground: #52525b;
+
+  --accent: #7c3aed; /* violet-600 */
+  --accent-foreground: #ffffff;
+
+  --destructive: #dc2626;
+  --success: #16a34a;
+  --success-foreground: #ffffff;
+  --warning: #f59e0b;
+  --warning-foreground: #18181b;
+  --info: #0ea5e9;
+  --info-foreground: #ffffff;
+
+  --border: #e4e4e7;
+  --input: #e4e4e7;
+  --ring: #6366f180; /* indigo-500 @ 50% */
+
+  --chart-1: var(--brand-start);
+  --chart-2: var(--brand-end);
+  --chart-3: var(--info);
+  --chart-4: var(--success);
+  --chart-5: var(--muted-foreground);
+
+  --radius: 0.75rem;
+
+  --sidebar: #ffffff;
+  --sidebar-foreground: #18181b;
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--muted);
+  --sidebar-accent-foreground: var(--foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
+
+@layer utilities {
+  /* The one gradient in the system — hero panels, the primary CTA,
+     streak rings/progress, milestone highlights. Everything else stays
+     solid so the gradient keeps its meaning.
+
+     Text only: background-clip:text colors glyphs, not SVG strokes — never
+     apply .text-gradient-brand to an icon, it renders invisible. */
+  .bg-gradient-brand {
+    background-image: linear-gradient(
+      135deg,
+      var(--brand-start) 0%,
+      var(--brand-end) 100%
+    );
+  }
+  .text-gradient-brand {
+    background-image: linear-gradient(
+      135deg,
+      var(--brand-start) 0%,
+      var(--brand-end) 100%
+    );
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+  }
+}

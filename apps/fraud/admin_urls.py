@@ -1,0 +1,23 @@
+from django.urls import path
+
+from apps.fraud.admin_views import (
+    AdminFraudEventListView,
+    AdminFraudReviewDetailView,
+    AdminFraudReviewListView,
+    AdminFraudReviewResolveView,
+)
+
+urlpatterns = [
+    path("admin/fraud-reviews/", AdminFraudReviewListView.as_view(), name="admin-fraud-review-list"),
+    path(
+        "admin/fraud-reviews/<uuid:pk>/",
+        AdminFraudReviewDetailView.as_view(),
+        name="admin-fraud-review-detail",
+    ),
+    path(
+        "admin/fraud-reviews/<uuid:pk>/resolve/",
+        AdminFraudReviewResolveView.as_view(),
+        name="admin-fraud-review-resolve",
+    ),
+    path("admin/fraud-events/", AdminFraudEventListView.as_view(), name="admin-fraud-event-list"),
+]

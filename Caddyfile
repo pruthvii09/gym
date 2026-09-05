@@ -1,0 +1,33 @@
+# Single public entrypoint for the whole app -- the browser only ever talks
+# to this (port 80, or 443 once a domain is added below). It routes API/admin/
+# static requests to Django and everything else to Next.js, so nothing else
+# needs to be exposed to the internet.
+#
+# No domain yet: leave this as ":80" and reach the app at http://<server-ip>.
+#
+# Once you point a domain's A record at this server's IP, replace ":80" below
+# with your domain (e.g. "gymstreak.example.com {") and Caddy automatically
+# provisions and renews a Let's Encrypt certificate -- no other config change
+# needed. Uncomment the email line first (required for Let's Encrypt).
+
+# {
+# 	email you@example.com
+# }
+
+:80 {
+	handle /api/* {
+		reverse_proxy web:8000
+	}
+
+	handle /admin/* {
+		reverse_proxy web:8000
+	}
+
+	handle /static/* {
+		reverse_proxy web:8000
+	}
+
+	handle {
+		reverse_proxy frontend:3000
+	}
+}
