@@ -5,7 +5,7 @@ check-in is valid. Nothing from the client determines the outcome -- status
 and risk_score are always computed here, server-side.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from django.conf import settings
 from django.core import signing
@@ -46,6 +46,14 @@ class CheckinResult:
     checkin: CheckIn
     created: bool  # False => idempotent replay (view returns 200)
     message: str
+    # Post-rebuild streak snapshot -- only set when this check-in was (or
+    # already was) VERIFIED, i.e. it actually fed the streak calculation.
+    streak: UserStreak | None = None
+    # UserRewards newly created by *this* rebuild. Deliberately empty on an
+    # idempotent replay (fast path or IntegrityError race below) even though
+    # `streak` is still populated there -- a replay shouldn't re-announce a
+    # reward the first response already delivered.
+    rewards_unlocked: list = field(default_factory=list)
 
 
 def create_checkin(
@@ -66,7 +74,10 @@ def create_checkin(
         existing = CheckIn.objects.filter(user=user, idempotency_key=idempotency_key).first()
         if existing is not None:
             return CheckinResult(
-                checkin=existing, created=False, message=_message_for(existing.status)
+                checkin=existing,
+                created=False,
+                message=_message_for(existing.status),
+                streak=_current_streak_snapshot(user, existing.status),
             )
 
     # Cheap, independent upsert -- resolved early so even hard-rejected
@@ -284,6 +295,15 @@ def _has_verified_today(user, gym):
     ).exists()
 
 
+def _current_streak_snapshot(user, checkin_status):
+    # Only meaningful once VERIFIED -- a REVIEW/REJECTED check-in never
+    # touched UserStreak, so returning a snapshot for it would misleadingly
+    # imply the streak already reflects this attempt.
+    if checkin_status != CheckIn.Status.VERIFIED:
+        return None
+    return UserStreak.objects.filter(user=user).first()
+
+
 def _persist(
     *,
     user,
@@ -320,7 +340,12 @@ def _persist(
             )
     except IntegrityError:
         checkin = CheckIn.objects.get(user=user, idempotency_key=idempotency_key)
-        return CheckinResult(checkin=checkin, created=False, message=_message_for(checkin.status))
+        return CheckinResult(
+            checkin=checkin,
+            created=False,
+            message=_message_for(checkin.status),
+            streak=_current_streak_snapshot(user, checkin.status),
+        )
 
     for event_type, details in fired_events:
         fraud_services.record_event(
@@ -331,8 +356,11 @@ def _persist(
     # cached derivation. Filtering on status here (rather than only calling
     # this from the one current call site that produces VERIFIED) protects
     # against silently missing a future VERIFIED-producing branch.
+    streak = None
+    rewards_unlocked = []
     if checkin.status == CheckIn.Status.VERIFIED:
-        streak_services.rebuild_user_streak(user)
+        streak = streak_services.rebuild_user_streak(user)
+        rewards_unlocked = getattr(streak, "newly_earned_rewards", [])
 
     # User-level risk assessment, every outcome (a rejected attempt matters
     # for "repeated failed check-ins"). The only automatic consequence of a
@@ -346,7 +374,13 @@ def _persist(
     # Analytics: demonstrative only, see apps.checkins.tasks docstring.
     transaction.on_commit(lambda cid=checkin.id: record_checkin_analytics.delay(checkin_id=cid))
 
-    return CheckinResult(checkin=checkin, created=True, message=message)
+    return CheckinResult(
+        checkin=checkin,
+        created=True,
+        message=message,
+        streak=streak,
+        rewards_unlocked=rewards_unlocked,
+    )
 
 
 # --- Admin/operations -------------------------------------------------------
@@ -400,8 +434,9 @@ MEMBER_DETAIL_RECENT_CHECKINS_LIMIT = 15
 
 def get_gym_member_detail(*, actor, gym, membership_id):
     """A gym staff member's view of one of their gym's members: the
-    membership row, their streak snapshot, and their recent check-in
-    history at this gym specifically (not every gym they've ever visited).
+    membership row, their streak snapshot, their rest-day setting, and
+    their recent check-in history at this gym specifically (not every gym
+    they've ever visited).
     """
     gym_services.assert_gym_staff(actor, gym)
     membership = get_object_or_404(
@@ -411,7 +446,8 @@ def get_gym_member_detail(*, actor, gym, membership_id):
         role=GymMembership.Role.MEMBER,
     )
     streak, _ = UserStreak.objects.get_or_create(user=membership.user)
+    rest_day = streak_services.get_or_create_rest_day(membership.user)
     recent_checkins = CheckIn.objects.filter(user=membership.user, gym=gym).order_by(
         "-checked_in_at"
     )[:MEMBER_DETAIL_RECENT_CHECKINS_LIMIT]
-    return membership, streak, recent_checkins
+    return membership, streak, rest_day, recent_checkins

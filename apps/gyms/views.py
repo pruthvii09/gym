@@ -22,7 +22,8 @@ from apps.gyms.serializers import (
     GymStaffRoleUpdateSerializer,
     OwnedGymUpdateSerializer,
 )
-from apps.streaks.serializers import UserStreakSerializer
+from apps.streaks import services as streak_services
+from apps.streaks.serializers import SetRestDaySerializer, UserRestDaySerializer, UserStreakSerializer
 
 
 class GymListView(ListCreateAPIView):
@@ -108,12 +109,13 @@ class GymMemberListView(ListAPIView):
 class GymMemberDetailView(APIView):
     def get(self, request, pk, membership_id):
         gym = get_object_or_404(Gym, pk=pk)
-        membership, streak, recent_checkins = checkin_services.get_gym_member_detail(
+        membership, streak, rest_day, recent_checkins = checkin_services.get_gym_member_detail(
             actor=request.user, gym=gym, membership_id=membership_id
         )
         data = {
             **GymMemberSerializer(membership).data,
             "streak": UserStreakSerializer(streak).data,
+            "rest_day": UserRestDaySerializer(rest_day).data,
             "recent_checkins": CheckinSerializer(recent_checkins, many=True).data,
         }
         return Response(data)
@@ -125,6 +127,30 @@ class GymMemberDetailView(APIView):
         )
         services.remove_gym_member(actor=request.user, gym=gym, membership=membership)
         return Response(status=204)
+
+
+class GymMemberRestDayView(APIView):
+    """Lets any of this gym's staff (STAFF/MANAGER/OWNER -- same gate as
+    viewing the member detail sheet this lives next to) set or reset a
+    member's rest day. Unlike the member's own self-service endpoint, this
+    isn't capped and resets their self-service quota, as a support lever.
+    """
+
+    def patch(self, request, pk, membership_id):
+        gym = get_object_or_404(Gym, pk=pk)
+        services.assert_gym_staff(request.user, gym)
+        membership = get_object_or_404(
+            GymMembership, pk=membership_id, gym=gym, role=GymMembership.Role.MEMBER
+        )
+        serializer = SetRestDaySerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        rest_day = streak_services.set_rest_day(
+            actor=request.user,
+            user=membership.user,
+            day_of_week=serializer.validated_data["day_of_week"],
+            is_self_service=False,
+        )
+        return Response(UserRestDaySerializer(rest_day).data)
 
 
 class GymDeviceListView(ListAPIView):

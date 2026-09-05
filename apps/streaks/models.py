@@ -14,6 +14,28 @@ class UserStreak(UUIDTimeStampedModel):
         return f"{self.user_id} streak={self.current_streak}"
 
 
+class UserRestDay(UUIDTimeStampedModel):
+    """A user's single self-designated weekly rest day (e.g. every Sunday)
+    -- a gap on this specific weekday never breaks their streak, additive to
+    (not a replacement for) StreakPolicy's generic allowed_rest_days/
+    freeze_count budget. One per user, not per gym-membership -- matches
+    UserStreak's own platform-wide granularity. Opt-in: day_of_week is None
+    until the user (or their gym's staff) sets one.
+    """
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="rest_day")
+    # 0=Monday..6=Sunday, matching Python's date.weekday() -- calculator.py
+    # compares this directly against gym_days (date objects), no conversion.
+    day_of_week = models.PositiveSmallIntegerField(null=True, blank=True)
+    # Self-service changes only (apps.streaks.services.set_rest_day) -- a
+    # gym-staff override resets this back to 0 rather than incrementing it,
+    # so staff intervention gives the member a fresh allowance.
+    self_service_changes_used = models.PositiveSmallIntegerField(default=0)
+
+    def __str__(self):
+        return f"{self.user_id} rest_day={self.day_of_week}"
+
+
 class StreakPolicy(UUIDTimeStampedModel):
     minimum_days_per_week = models.PositiveSmallIntegerField(default=2)
     allowed_rest_days = models.PositiveSmallIntegerField(default=1)

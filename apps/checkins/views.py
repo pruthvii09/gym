@@ -6,6 +6,8 @@ from rest_framework.views import APIView
 from apps.checkins import services
 from apps.checkins.models import CheckIn
 from apps.checkins.serializers import CheckinCreateSerializer, CheckinSerializer
+from apps.rewards.serializers import UserRewardListSerializer
+from apps.streaks.serializers import UserStreakSerializer
 
 
 class CheckinCreateView(APIView):
@@ -20,7 +22,12 @@ class CheckinCreateView(APIView):
             idempotency_key=request.headers.get("Idempotency-Key") or None,
             **serializer.validated_data,
         )
-        data = {**CheckinSerializer(result.checkin).data, "message": result.message}
+        data = {
+            **CheckinSerializer(result.checkin).data,
+            "message": result.message,
+            "streak": UserStreakSerializer(result.streak).data if result.streak else None,
+            "rewards_unlocked": UserRewardListSerializer(result.rewards_unlocked, many=True).data,
+        }
         return Response(data, status=201 if result.created else 200)
 
 

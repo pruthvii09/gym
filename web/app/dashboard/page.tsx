@@ -3,18 +3,21 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Flame, LogOut, Plus, QrCode, ShieldCheck, Trophy } from "lucide-react";
+import { Flame, LogOut, Plus, QrCode, ShieldCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { StreakCalendar } from "@/components/streak-calendar";
+import { StreakOverviewCard } from "@/components/dashboard/streak-overview-card";
+import { CheckinActivityCard } from "@/components/dashboard/checkin-activity-card";
+import { RecentCheckinsCard } from "@/components/dashboard/recent-checkins-card";
+import { RewardsCard } from "@/components/dashboard/rewards-card";
+import { RestDayCard } from "@/components/dashboard/rest-day-card";
 import { logout as logoutRequest } from "@/lib/api/auth";
 import { listMyGymMemberships } from "@/lib/api/gyms";
-import { getMyCalendar, listMyCheckins } from "@/lib/api/checkins";
+import { getMyCalendar, getMyRestDay } from "@/lib/api/streaks";
 import { clearTokens, getRefreshToken } from "@/lib/auth/session";
 import { useCurrentUser } from "@/lib/auth/use-current-user";
-import type { CalendarResponse, CheckIn, GymMembershipSummary, GymStatus, MeResponse } from "@/types/api";
+import type { CalendarResponse, GymMembershipSummary, GymStatus, MeResponse, UserRestDay } from "@/types/api";
 
 // Active gyms first (the ones you'd actually jump into day to day), then
 // pending (still needs admin review), then everything else.
@@ -34,41 +37,28 @@ function toIsoDate(date: Date) {
   return `${year}-${month}-${day}`;
 }
 
-const CHECKIN_STATUS_TONE: Record<string, string> = {
-  verified: "border-success/20 bg-success/10 text-success",
-  review: "border-warning/25 bg-warning/5 text-warning",
-  rejected: "border-destructive/20 bg-destructive/5 text-destructive",
-  pending: "bg-muted text-muted-foreground",
-};
-
-function formatDateTime(value: string) {
-  return new Date(value).toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
-
 function MemberDashboard({ me, displayName }: { me: MeResponse; displayName: string }) {
   const [calendar, setCalendar] = useState<CalendarResponse | null>(null);
-  const [checkins, setCheckins] = useState<CheckIn[] | null>(null);
+  const [restDay, setRestDay] = useState<UserRestDay | null>(null);
 
-  useEffect(() => {
+  // Shared by StreakOverviewCard (at-risk banner) and CheckinActivityCard
+  // (calendar row marker) -- fetched once here rather than by each card,
+  // unlike the other cards below which are fully self-contained.
+  const loadShared = () => {
     const end = new Date();
     const start = new Date();
     start.setDate(end.getDate() - (CALENDAR_DAYS - 1));
     getMyCalendar(toIsoDate(start), toIsoDate(end))
       .then(setCalendar)
       .catch(() => setCalendar(null));
-    listMyCheckins()
-      .then((res) => setCheckins(res.results))
-      .catch(() => setCheckins([]));
-  }, []);
+    getMyRestDay()
+      .then(setRestDay)
+      .catch(() => setRestDay(null));
+  };
 
-  const streak = calendar?.streak;
-  const isPersonalBest =
-    !!streak && streak.current_streak > 0 && streak.current_streak === streak.longest_streak;
+  useEffect(() => {
+    loadShared();
+  }, []);
 
   return (
     <>
@@ -89,86 +79,15 @@ function MemberDashboard({ me, displayName }: { me: MeResponse; displayName: str
         ) : null}
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <Card>
-          <CardContent className="flex items-center gap-3">
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-              <Flame className="size-5" />
-            </span>
-            <div>
-              <p className="text-2xl leading-none font-semibold">
-                {streak ? streak.current_streak : "—"}
-              </p>
-              <p className="text-xs text-muted-foreground">Current streak</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex items-center gap-3">
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-warning/10 text-warning">
-              <Trophy className="size-5" />
-            </span>
-            <div>
-              <p className="text-2xl leading-none font-semibold">
-                {streak ? streak.longest_streak : "—"}
-              </p>
-              <p className="text-xs text-muted-foreground">Longest streak</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <StreakOverviewCard calendar={calendar} restDay={restDay} hasGym={!!me.gym} />
 
-      {streak && streak.current_streak > 0 ? (
-        <p className="-mt-2 text-sm text-muted-foreground">
-          {isPersonalBest
-            ? `🔥 ${streak.current_streak} days — that's your personal best!`
-            : `🔥 ${streak.current_streak} day streak — keep it going.`}
-        </p>
-      ) : null}
+      <CheckinActivityCard calendar={calendar} restDayOfWeek={restDay?.day_of_week ?? null} />
 
-      <Card className="min-w-0">
-        <CardContent className="min-w-0 space-y-3">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-medium">Check-in activity</p>
-            <p className="text-xs text-muted-foreground">Last 52 weeks</p>
-          </div>
-          {calendar ? (
-            <StreakCalendar days={calendar.days} />
-          ) : (
-            <p className="py-6 text-center text-sm text-muted-foreground">Loading…</p>
-          )}
-        </CardContent>
-      </Card>
+      <RestDayCard onChanged={loadShared} />
 
-      <Card>
-        <CardContent className="space-y-3">
-          <p className="text-sm font-medium">Recent check-ins</p>
-          {checkins === null ? (
-            <p className="py-4 text-center text-sm text-muted-foreground">Loading…</p>
-          ) : checkins.length === 0 ? (
-            <p className="py-4 text-center text-sm text-muted-foreground">
-              No check-ins yet — scan the code at your gym to start your streak.
-            </p>
-          ) : (
-            <ul className="space-y-1.5">
-              {checkins.slice(0, 8).map((checkin) => (
-                <li
-                  key={checkin.id}
-                  className="flex items-center justify-between rounded-md border border-border px-3 py-2 text-sm"
-                >
-                  <span>{formatDateTime(checkin.checked_in_at)}</span>
-                  <Badge
-                    variant="outline"
-                    className={CHECKIN_STATUS_TONE[checkin.status] ?? ""}
-                  >
-                    {checkin.status}
-                  </Badge>
-                </li>
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
+      <RecentCheckinsCard />
+
+      <RewardsCard />
     </>
   );
 }

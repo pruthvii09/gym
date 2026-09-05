@@ -13,7 +13,10 @@ gym.roast.baby {
 		reverse_proxy web:8000
 	}
 
-	handle /admin/* {
+	# Django's built-in admin site, not the app's staff dashboard --
+	# see config/urls.py. /admin/* itself falls through to the `handle {}`
+	# block below and reaches the Next.js frontend.
+	handle /django-admin/* {
 		reverse_proxy web:8000
 	}
 

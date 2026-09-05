@@ -8,12 +8,17 @@ import {
   ArrowLeft,
   Camera,
   CheckCircle2,
+  Flame,
+  Gift,
+  Hourglass,
   KeyRound,
   Loader2,
   MapPin,
+  Trophy,
   XCircle,
 } from "lucide-react";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -21,6 +26,7 @@ import { Label } from "@/components/ui/label";
 import { useCurrentUser } from "@/lib/auth/use-current-user";
 import { createCheckin } from "@/lib/api/checkins";
 import { ApiError } from "@/lib/api/client";
+import type { CreateCheckinResult } from "@/types/api";
 
 type Status =
   | "idle"
@@ -30,6 +36,7 @@ type Status =
   | "location-error"
   | "submitting"
   | "success"
+  | "review"
   | "error";
 
 export default function CheckinPage() {
@@ -40,6 +47,7 @@ export default function CheckinPage() {
 
   const [status, setStatus] = useState<Status>("idle");
   const [message, setMessage] = useState<string | null>(null);
+  const [result, setResult] = useState<CreateCheckinResult | null>(null);
   const [manualOpen, setManualOpen] = useState(false);
   const [manualToken, setManualToken] = useState("");
 
@@ -72,8 +80,11 @@ export default function CheckinPage() {
           platform: "web",
         })
           .then((res) => {
-            setStatus(res.status === "verified" || res.status === "review" ? "success" : "error");
+            setStatus(
+              res.status === "verified" ? "success" : res.status === "review" ? "review" : "error"
+            );
             setMessage(res.message);
+            setResult(res);
           })
           .catch((err) => {
             setStatus("error");
@@ -150,6 +161,7 @@ export default function CheckinPage() {
   const reset = () => {
     setStatus("idle");
     setMessage(null);
+    setResult(null);
     setManualToken("");
   };
 
@@ -269,10 +281,96 @@ export default function CheckinPage() {
             ) : null}
 
             {status === "success" ? (
-              <Card className="border-success/25 bg-success/5">
+              <div className="space-y-3">
+                <Card className="border-success/25 bg-success/5">
+                  <CardContent className="flex flex-col items-center gap-3 py-8 text-center">
+                    <CheckCircle2 className="size-10 text-success" />
+                    <p className="font-medium text-success">{message}</p>
+
+                    {result?.streak ? (
+                      <div className="flex flex-col items-center gap-1.5 pt-1">
+                        <div className="flex items-center gap-2">
+                          <Flame className="size-7 text-primary" />
+                          <span className="text-3xl leading-none font-bold tracking-tight">
+                            {result.streak.current_streak}
+                          </span>
+                          <span className="text-sm text-muted-foreground">
+                            day{result.streak.current_streak === 1 ? "" : "s"}
+                          </span>
+                        </div>
+                        {result.streak.current_streak > 0 &&
+                        result.streak.current_streak === result.streak.longest_streak ? (
+                          <Badge
+                            variant="outline"
+                            className="gap-1 border-warning/25 bg-warning/10 text-warning"
+                          >
+                            <Trophy className="size-3.5" />
+                            Personal best
+                          </Badge>
+                        ) : null}
+                      </div>
+                    ) : null}
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-1"
+                      render={<Link href="/dashboard" />}
+                    >
+                      Back to dashboard
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                {result?.rewards_unlocked && result.rewards_unlocked.length > 0 ? (
+                  <Card className="border-warning/25 bg-warning/5">
+                    <CardContent className="space-y-3 py-5">
+                      <p className="flex items-center gap-1.5 text-sm font-medium text-warning">
+                        <Gift className="size-4" />
+                        {result.rewards_unlocked.length === 1
+                          ? "You just unlocked a reward!"
+                          : `You just unlocked ${result.rewards_unlocked.length} rewards!`}
+                      </p>
+                      <ul className="space-y-2">
+                        {result.rewards_unlocked.map((ur) => (
+                          <li
+                            key={ur.id}
+                            className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card px-3 py-2"
+                          >
+                            <span className="text-sm font-medium">{ur.reward_definition.name}</span>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              render={
+                                <Link
+                                  href={
+                                    ur.reward_definition.reward_type === "perk"
+                                      ? "/dashboard"
+                                      : `/rewards/${ur.reward_definition.id}/claim`
+                                  }
+                                />
+                              }
+                            >
+                              {ur.reward_definition.reward_type === "perk" ? "Redeem" : "Claim"}
+                            </Button>
+                          </li>
+                        ))}
+                      </ul>
+                    </CardContent>
+                  </Card>
+                ) : null}
+              </div>
+            ) : null}
+
+            {status === "review" ? (
+              <Card className="border-warning/25 bg-warning/5">
                 <CardContent className="flex flex-col items-center gap-3 py-8 text-center">
-                  <CheckCircle2 className="size-10 text-success" />
-                  <p className="font-medium text-success">{message}</p>
+                  <Hourglass className="size-10 text-warning" />
+                  <p className="font-medium text-warning">{message}</p>
+                  <p className="text-sm text-muted-foreground">
+                    We&apos;re double-checking this one — it doesn&apos;t count toward your streak
+                    until it&apos;s approved. We&apos;ll notify you once it&apos;s reviewed.
+                  </p>
                   <Button variant="outline" size="sm" render={<Link href="/dashboard" />}>
                     Back to dashboard
                   </Button>

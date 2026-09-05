@@ -9,7 +9,10 @@ from drf_spectacular.views import (
 from apps.users.views import MeView
 
 urlpatterns = [
-    path("admin/", admin.site.urls),
+    # Not "admin/" -- that path is reserved for the Next.js staff dashboard
+    # (web/app/admin/), which Caddy routes to the frontend. Django's own
+    # admin site lives at /django-admin/ so the two don't collide.
+    path("django-admin/", admin.site.urls),
     path("health/", include("apps.common.urls")),
     path("api/v1/auth/", include("apps.users.urls")),
     path("api/v1/me/", MeView.as_view(), name="me"),

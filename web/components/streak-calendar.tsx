@@ -3,12 +3,16 @@
 import { useMemo } from "react";
 
 import { cn } from "@/lib/utils";
+import { apiWeekdayToJsDay } from "@/lib/rest-day";
 import type { CalendarDay } from "@/types/api";
 
 const MONTH_LABELS = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
 const WEEKDAY_LABELS = ["", "Mon", "", "Wed", "", "Fri", ""];
+// Fallback label for the rest-day row specifically, since WEEKDAY_LABELS
+// otherwise leaves Sun/Tue/Thu/Sat blank (GitHub-style sparse labeling).
+const WEEKDAY_LABELS_FULL = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 type Cell = { day: CalendarDay | null; isToday: boolean };
 
@@ -24,7 +28,19 @@ function formatTooltip(day: CalendarDay) {
   return `Checked in — ${label}`;
 }
 
-export function StreakCalendar({ days }: { days: CalendarDay[] }) {
+export function StreakCalendar({
+  days,
+  restDayOfWeek = null,
+}: {
+  days: CalendarDay[];
+  restDayOfWeek?: number | null;
+}) {
+  // Row index within a column is the JS Date.getDay() value (0=Sun..6=Sat)
+  // -- leadingBlanks below aligns the first column to it, and every column
+  // has exactly 7 rows -- so this converts the API's rest-day convention
+  // once, to know which row to mark.
+  const restDayRow = restDayOfWeek !== null ? apiWeekdayToJsDay(restDayOfWeek) : null;
+
   const { columns, monthLabels } = useMemo(() => {
     if (days.length === 0) return { columns: [] as Cell[][], monthLabels: [] as { index: number; label: string }[] };
 
@@ -82,10 +98,14 @@ export function StreakCalendar({ days }: { days: CalendarDay[] }) {
             {WEEKDAY_LABELS.map((label, i) => (
               <span
                 key={i}
-                className="text-[9px] leading-none text-muted-foreground"
+                title={i === restDayRow ? `${WEEKDAY_LABELS_FULL[i]} — your rest day` : undefined}
+                className={cn(
+                  "text-[9px] leading-none",
+                  i === restDayRow ? "font-medium text-primary" : "text-muted-foreground"
+                )}
                 style={{ height: cellPx }}
               >
-                {label}
+                {label || (i === restDayRow ? WEEKDAY_LABELS_FULL[i] : "")}
               </span>
             ))}
           </div>
@@ -101,7 +121,9 @@ export function StreakCalendar({ days }: { days: CalendarDay[] }) {
                         "rounded-[2px] transition-transform hover:scale-125",
                         cell.day.checked_in
                           ? "bg-gradient-brand"
-                          : "bg-muted",
+                          : rowIndex === restDayRow
+                            ? "bg-primary/15"
+                            : "bg-muted",
                         cell.isToday && "ring-1 ring-primary ring-offset-1 ring-offset-background"
                       )}
                       style={{ width: cellPx, height: cellPx }}

@@ -29,10 +29,31 @@ def gym_day(checked_in_at: datetime, grace_period_minutes: int) -> date:
     return (checked_in_at - timedelta(minutes=grace_period_minutes)).date()
 
 
+def _gap_covered_by_rest_day(start: date, gap: int, rest_day_of_week: int | None) -> bool:
+    """True if every missing date in a gap (the `gap` days strictly between
+    `start` and `start + gap + 1`) falls on the user's designated rest
+    weekday. In practice `gap` is always 1 here -- two different calendar
+    dates can't share a weekday unless 7+ days apart, and a gap that large
+    already exceeds allowed_rest_days regardless -- but this holds for any
+    gap size on general principle.
+    """
+    if rest_day_of_week is None or gap <= 0:
+        return False
+    return all((start + timedelta(days=i)).weekday() == rest_day_of_week for i in range(1, gap + 1))
+
+
 def calculate_streak(
-    gym_days: list[date], policy: StreakPolicyData, today: date
+    gym_days: list[date],
+    policy: StreakPolicyData,
+    today: date,
+    rest_day_of_week: int | None = None,
 ) -> StreakResult:
-    """gym_days must be sorted and distinct."""
+    """gym_days must be sorted and distinct. rest_day_of_week (0=Monday..
+    6=Sunday, apps.streaks.models.UserRestDay's convention) is additive to
+    policy's own allowed_rest_days/freeze_count budget, not a replacement --
+    a gap fully on that weekday is forgiven for free, never consuming
+    gaps_used.
+    """
     if not gym_days:
         return StreakResult(current_streak=0, longest_streak=0, last_activity_date=None)
 
@@ -45,7 +66,9 @@ def calculate_streak(
         gap = (curr - prev).days - 1
         broken = False
 
-        if gap > 0:
+        if gap > 0 and _gap_covered_by_rest_day(prev, gap, rest_day_of_week):
+            pass  # forgiven for free -- not broken, gaps_used untouched
+        elif gap > 0:
             if gap > policy.allowed_rest_days or gaps_used >= policy.freeze_count:
                 broken = True
             else:
@@ -81,8 +104,10 @@ def calculate_streak(
         current_streak = spans[-1]
     else:
         virtual_gap = days_since - 1
-        alive = virtual_gap == 0 or (
-            virtual_gap <= policy.allowed_rest_days and last_gaps_used < policy.freeze_count
+        alive = (
+            virtual_gap == 0
+            or _gap_covered_by_rest_day(last_end, virtual_gap, rest_day_of_week)
+            or (virtual_gap <= policy.allowed_rest_days and last_gaps_used < policy.freeze_count)
         )
         current_streak = spans[-1] if alive else 0
 

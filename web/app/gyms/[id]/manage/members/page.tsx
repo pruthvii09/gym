@@ -1,12 +1,19 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Eye, Flame, Loader2, MoreHorizontal, Search, Trophy, UserX } from "lucide-react";
+import { CalendarOff, Eye, Flame, Loader2, MoreHorizontal, Search, Trophy, UserX } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -38,8 +45,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { getGymMemberDetail, listGymMembers, removeGymMember } from "@/lib/api/gym-manage";
+import {
+  getGymMemberDetail,
+  listGymMembers,
+  removeGymMember,
+  updateGymMemberRestDay,
+} from "@/lib/api/gym-manage";
 import { ApiError } from "@/lib/api/client";
+import { WEEKDAY_LABELS } from "@/lib/rest-day";
 import { useGymManageContext } from "../gym-manage-context";
 import type { GymMember, GymMemberDetail } from "@/types/api";
 
@@ -102,6 +115,105 @@ function formatDateTime(value: string) {
     hour: "numeric",
     minute: "2-digit",
   });
+}
+
+function MemberRestDayEditor({
+  gymId,
+  membershipId,
+  restDay,
+  onUpdated,
+}: {
+  gymId: string;
+  membershipId: string;
+  restDay: GymMemberDetail["rest_day"];
+  onUpdated: (restDay: GymMemberDetail["rest_day"]) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [selected, setSelected] = useState(
+    restDay.day_of_week !== null ? String(restDay.day_of_week) : ""
+  );
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSave = async () => {
+    if (selected === "") return;
+    setBusy(true);
+    setError(null);
+    try {
+      const updated = await updateGymMemberRestDay(gymId, membershipId, {
+        day_of_week: Number(selected),
+      });
+      onUpdated(updated);
+      setEditing(false);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Couldn't update their rest day.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="space-y-2 rounded-lg border border-border p-3">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <CalendarOff className="size-4 shrink-0 text-muted-foreground" />
+          <p className="text-sm">
+            Rest day:{" "}
+            <span className="font-medium">
+              {restDay.day_of_week !== null ? WEEKDAY_LABELS[restDay.day_of_week] : "Not set"}
+            </span>
+          </p>
+        </div>
+        {!editing ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setSelected(restDay.day_of_week !== null ? String(restDay.day_of_week) : "");
+              setEditing(true);
+            }}
+          >
+            {restDay.day_of_week !== null ? "Change" : "Set"}
+          </Button>
+        ) : null}
+      </div>
+      <p className="text-xs text-muted-foreground">
+        {restDay.self_service_changes_used}/
+        {restDay.self_service_changes_used + restDay.self_service_changes_remaining} of their own
+        changes used — setting it here resets that to 0.
+      </p>
+      {editing ? (
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <Select
+            value={selected}
+            onValueChange={(v) => setSelected(v ?? "")}
+            items={Object.fromEntries(WEEKDAY_LABELS.map((label, i) => [String(i), label]))}
+          >
+            <SelectTrigger className="w-full sm:w-40">
+              <SelectValue placeholder="Choose a day" />
+            </SelectTrigger>
+            <SelectContent>
+              {WEEKDAY_LABELS.map((label, i) => (
+                <SelectItem key={label} value={String(i)}>
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="flex gap-2">
+            <Button size="sm" onClick={handleSave} disabled={busy || selected === ""}>
+              {busy ? <Loader2 className="animate-spin" /> : null}
+              Save
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => setEditing(false)} disabled={busy}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      ) : null}
+      {error ? <p className="text-xs text-destructive">{error}</p> : null}
+    </div>
+  );
 }
 
 function MemberDetailSheet({
@@ -193,6 +305,13 @@ function MemberDetailSheet({
               <p className="-mt-3 text-xs text-muted-foreground">
                 Last activity: {formatDate(detail.streak.last_activity_date)}
               </p>
+
+              <MemberRestDayEditor
+                gymId={gymId}
+                membershipId={member!.id}
+                restDay={detail.rest_day}
+                onUpdated={(rest_day) => setDetail((d) => (d ? { ...d, rest_day } : d))}
+              />
 
               <div className="space-y-2">
                 <p className="text-sm font-medium">Recent check-ins at this gym</p>

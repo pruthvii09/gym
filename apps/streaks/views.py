@@ -8,7 +8,12 @@ from rest_framework.views import APIView
 
 from apps.streaks import services
 from apps.streaks.models import UserStreak
-from apps.streaks.serializers import CalendarQuerySerializer, UserStreakSerializer
+from apps.streaks.serializers import (
+    CalendarQuerySerializer,
+    SetRestDaySerializer,
+    UserRestDaySerializer,
+    UserStreakSerializer,
+)
 
 
 class MyStreakView(RetrieveAPIView):
@@ -37,3 +42,20 @@ class MyCalendarView(APIView):
             )
 
         return Response(services.get_calendar(request.user, start, end))
+
+
+class MyRestDayView(APIView):
+    def get(self, request):
+        rest_day = services.get_or_create_rest_day(request.user)
+        return Response(UserRestDaySerializer(rest_day).data)
+
+    def patch(self, request):
+        serializer = SetRestDaySerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        rest_day = services.set_rest_day(
+            actor=request.user,
+            user=request.user,
+            day_of_week=serializer.validated_data["day_of_week"],
+            is_self_service=True,
+        )
+        return Response(UserRestDaySerializer(rest_day).data)
