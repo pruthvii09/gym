@@ -91,10 +91,16 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd ~/gymstreak
+            echo "--- DEBUG: ~/gymstreak contents ---"
+            ls -la
+            echo "--- DEBUG: Caddyfile on host ---"
+            cat Caddyfile
             docker compose -f docker-compose.prod.yml pull
             docker compose -f docker-compose.prod.yml up -d --remove-orphans
             # Caddyfile is bind-mounted, so compose has no way to notice it
             # changed on disk -- reload explicitly every deploy so edits to
             # it (routes, domain, etc.) actually take effect.
             docker compose -f docker-compose.prod.yml exec -T caddy caddy reload --config /etc/caddy/Caddyfile
+            echo "--- DEBUG: Caddyfile inside caddy container ---"
+            docker compose -f docker-compose.prod.yml exec -T caddy cat /etc/caddy/Caddyfile
             docker image prune -f
