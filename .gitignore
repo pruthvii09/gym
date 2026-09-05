@@ -17,3 +17,4 @@ celerybeat-schedule*
 
 .idea/
 .vscode/
+.claude/
