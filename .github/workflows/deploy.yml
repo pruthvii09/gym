@@ -91,16 +91,15 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd ~/gymstreak
-            echo "--- DEBUG: ~/gymstreak contents ---"
-            ls -la
-            echo "--- DEBUG: Caddyfile on host ---"
-            cat Caddyfile
             docker compose -f docker-compose.prod.yml pull
             docker compose -f docker-compose.prod.yml up -d --remove-orphans
-            # Caddyfile is bind-mounted, so compose has no way to notice it
-            # changed on disk -- reload explicitly every deploy so edits to
-            # it (routes, domain, etc.) actually take effect.
-            docker compose -f docker-compose.prod.yml exec -T caddy caddy reload --config /etc/caddy/Caddyfile
-            echo "--- DEBUG: Caddyfile inside caddy container ---"
-            docker compose -f docker-compose.prod.yml exec -T caddy cat /etc/caddy/Caddyfile
+            # NOT `caddy reload`: Caddyfile is a single-file bind mount, which
+            # Linux/Docker binds to the file's inode at container creation.
+            # SCP replaces the file via write-temp-then-rename (a new inode),
+            # so an already-running container keeps seeing the old one --
+            # `reload` would read that same stale inode and "succeed" with
+            # nothing actually changing. caddy:2-alpine's tag never changes
+            # either, so plain `up -d` never recreates it on its own. Force
+            # it every deploy so the bind mount is always re-resolved fresh.
+            docker compose -f docker-compose.prod.yml up -d --force-recreate caddy
             docker image prune -f
