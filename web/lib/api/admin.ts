@@ -42,10 +42,22 @@ export function listAdminUsers(params: { search?: string; isActive?: boolean } =
   );
 }
 
+export function getAdminUser(id: string) {
+  return apiFetch<AdminUser>(`/api/v1/admin/users/${id}/`, {}, { auth: true });
+}
+
 export function setUserActive(id: string, isActive: boolean, reason?: string) {
   return apiFetch<AdminUser>(
     `/api/v1/admin/users/${id}/status/`,
     { method: "POST", body: JSON.stringify({ is_active: isActive, reason: reason ?? "" }) },
+    { auth: true }
+  );
+}
+
+export function blockRewardClaims(id: string, reason?: string) {
+  return apiFetch<{ fraud_review_id: string; risk_level: string }>(
+    `/api/v1/admin/users/${id}/block-reward-claims/`,
+    { method: "POST", body: JSON.stringify({ reason: reason ?? "" }) },
     { auth: true }
   );
 }
