@@ -3,6 +3,7 @@ from rest_framework.generics import ListAPIView, ListCreateAPIView, RetrieveAPIV
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.badges.serializers import UserBadgeSerializer
 from apps.workouts import services
 from apps.workouts.models import Exercise, ExerciseSet, SessionExercise, WorkoutSession
 from apps.workouts.serializers import (
@@ -131,7 +132,13 @@ class WorkoutSessionFinishView(APIView):
     def post(self, request, session_id):
         session = _get_own_session(request, session_id)
         services.finish_session(session)
-        return Response(WorkoutSessionDetailSerializer(session).data)
+        data = {
+            **WorkoutSessionDetailSerializer(session).data,
+            "badges_unlocked": UserBadgeSerializer(
+                getattr(session, "newly_earned_badges", []), many=True
+            ).data,
+        }
+        return Response(data)
 
 
 class WorkoutSessionCancelView(APIView):

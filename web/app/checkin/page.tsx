@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { AchievementUnlockedOverlay } from "@/components/badges/achievement-unlocked-overlay";
 import { useCurrentUser } from "@/lib/auth/use-current-user";
 import { createCheckin } from "@/lib/api/checkins";
 import { ApiError } from "@/lib/api/client";
@@ -50,6 +51,7 @@ export default function CheckinPage() {
   const [result, setResult] = useState<CreateCheckinResult | null>(null);
   const [manualOpen, setManualOpen] = useState(false);
   const [manualToken, setManualToken] = useState("");
+  const [showAchievement, setShowAchievement] = useState(false);
 
   useEffect(() => {
     if (!loading && !me) {
@@ -85,6 +87,7 @@ export default function CheckinPage() {
             );
             setMessage(res.message);
             setResult(res);
+            if (res.badges_unlocked && res.badges_unlocked.length > 0) setShowAchievement(true);
           })
           .catch((err) => {
             setStatus("error");
@@ -163,6 +166,7 @@ export default function CheckinPage() {
     setMessage(null);
     setResult(null);
     setManualToken("");
+    setShowAchievement(false);
   };
 
   if (loading || !me) {
@@ -426,6 +430,13 @@ export default function CheckinPage() {
           </>
         )}
       </main>
+
+      {showAchievement && result?.badges_unlocked?.length ? (
+        <AchievementUnlockedOverlay
+          badges={result.badges_unlocked}
+          onDismiss={() => setShowAchievement(false)}
+        />
+      ) : null}
     </div>
   );
 }

@@ -1,7 +1,17 @@
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 from apps.common.models import UUIDTimeStampedModel
 from apps.users.models import User
+
+# A gym is a building, not a city -- bounding this prevents a
+# self-service-set (or just fat-fingered) radius from effectively disabling
+# location verification. 500m is generous enough for a large gym/campus
+# with parking; 10m keeps it from being set so tight that ordinary GPS
+# noise (already tolerated separately, see CHECKIN_GPS_ACCURACY_ALLOWANCE_
+# METERS in apps.checkins.services) causes false rejections.
+CHECKIN_RADIUS_MIN_METERS = 10
+CHECKIN_RADIUS_MAX_METERS = 500
 
 
 class Gym(UUIDTimeStampedModel):
@@ -24,9 +34,16 @@ class Gym(UUIDTimeStampedModel):
     postal_code = models.CharField(max_length=20, blank=True)
     latitude = models.DecimalField(max_digits=9, decimal_places=6)
     longitude = models.DecimalField(max_digits=9, decimal_places=6)
-    # Unused by any logic in this phase -- reserved for a future geofencing
-    # check when member check-in redemption is built.
-    checkin_radius_meters = models.PositiveIntegerField(default=100)
+    # Enforced in apps.checkins.services.create_checkin -- a check-in
+    # further than this (plus a small GPS-accuracy allowance) from the
+    # gym's own coordinates is hard-rejected.
+    checkin_radius_meters = models.PositiveIntegerField(
+        default=100,
+        validators=[
+            MinValueValidator(CHECKIN_RADIUS_MIN_METERS),
+            MaxValueValidator(CHECKIN_RADIUS_MAX_METERS),
+        ],
+    )
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.ACTIVE)
 
     class Meta:

@@ -10,9 +10,21 @@ phone_validator = RegexValidator(
     message="Enter a valid phone number (7-15 digits, optional leading +).",
 )
 
+username_validator = RegexValidator(
+    regex=r"^[a-z0-9_]{3,30}$",
+    message="Usernames can only contain lowercase letters, numbers, and underscores (3-30 characters).",
+)
+
 
 class User(UUIDTimeStampedModel, AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True, db_index=True)
+    # Nullable only at the DB/migration-history level (existing rows were
+    # backfilled in migration 0004) -- application code always requires one:
+    # UserManager.create_user auto-generates a unique one when the caller
+    # doesn't supply it, and RegisterSerializer requires it explicitly from
+    # a real signup. Powers the public profile/search surface -- never used
+    # for auth (email remains USERNAME_FIELD).
+    username = models.CharField(max_length=30, unique=True, validators=[username_validator])
     first_name = models.CharField(max_length=150, blank=True)
     last_name = models.CharField(max_length=150, blank=True)
     phone = models.CharField(

@@ -37,6 +37,7 @@ import type { GymSummary } from "@/types/api";
 
 const PHONE_REGEX = /^\+?[0-9]{7,15}$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const USERNAME_REGEX = /^[a-z0-9_]{3,30}$/;
 
 type Intent = "join" | "create";
 
@@ -51,6 +52,13 @@ function buildRegisterSchema(intent: Intent) {
         .string()
         .min(1, "Email is required")
         .regex(EMAIL_REGEX, "Enter a valid email address"),
+      username: z
+        .string()
+        .min(1, "Username is required")
+        .regex(
+          USERNAME_REGEX,
+          "Lowercase letters, numbers, and underscores only (3-30 characters)"
+        ),
       password: z.string().min(8, "Password must be at least 8 characters"),
       confirmPassword: z.string().min(1, "Confirm your password"),
       first_name: z.string().optional(),
@@ -132,6 +140,7 @@ function RegisterForm() {
     resolver: zodResolver(schema),
     defaultValues: {
       email: "",
+      username: "",
       password: "",
       confirmPassword: "",
       first_name: "",
@@ -161,6 +170,7 @@ function RegisterForm() {
     try {
       await registerRequest({
         email: values.email,
+        username: values.username.toLowerCase(),
         password: values.password,
         first_name: values.first_name || undefined,
         last_name: values.last_name || undefined,
@@ -177,14 +187,16 @@ function RegisterForm() {
     } catch (err) {
       if (err instanceof ApiError) {
         const emailError = err.fieldError("email");
+        const usernameError = err.fieldError("username");
         const passwordError = err.fieldError("password");
         const phoneError = err.fieldError("phone");
         const gymError = err.fieldError("gym_id");
         if (emailError) setError("email", { message: emailError });
+        if (usernameError) setError("username", { message: usernameError });
         if (passwordError) setError("password", { message: passwordError });
         if (phoneError) setError("phone", { message: phoneError });
         if (gymError) setError("gym_id", { message: gymError });
-        if (!emailError && !passwordError && !phoneError && !gymError) {
+        if (!emailError && !usernameError && !passwordError && !phoneError && !gymError) {
           setFormError(err.message);
         }
       } else {
@@ -273,6 +285,30 @@ function RegisterForm() {
             {errors.email ? (
               <p className="text-xs text-destructive">{errors.email.message}</p>
             ) : null}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="username">Username</Label>
+            <div className="relative">
+              <span className="absolute inset-y-0 left-3 flex items-center text-sm text-muted-foreground">
+                @
+              </span>
+              <Input
+                id="username"
+                autoComplete="username"
+                placeholder="your_username"
+                className="pl-7"
+                aria-invalid={!!errors.username}
+                {...field("username")}
+              />
+            </div>
+            {errors.username ? (
+              <p className="text-xs text-destructive">{errors.username.message}</p>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Shown on your public profile — you can change it later.
+              </p>
+            )}
           </div>
 
           <div className="space-y-1.5">

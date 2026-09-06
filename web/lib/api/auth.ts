@@ -5,6 +5,7 @@ import type {
   MeResponse,
   RegisterRequest,
   RegisterResponse,
+  UpdateProfileRequest,
 } from "@/types/api";
 
 export function register(payload: RegisterRequest) {
@@ -30,4 +31,12 @@ export function logout(refresh: string) {
 
 export function getMe() {
   return apiFetch<MeResponse>("/api/v1/me/", {}, { auth: true });
+}
+
+export function updateProfile(payload: UpdateProfileRequest) {
+  return apiFetch<MeResponse>(
+    "/api/v1/me/",
+    { method: "PATCH", body: JSON.stringify(payload) },
+    { auth: true }
+  );
 }

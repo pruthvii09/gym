@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
+from apps.badges.serializers import UserBadgeSerializer
 from apps.checkins import services
 from apps.checkins.models import CheckIn
 from apps.checkins.serializers import CheckinCreateSerializer, CheckinSerializer
@@ -27,6 +28,7 @@ class CheckinCreateView(APIView):
             "message": result.message,
             "streak": UserStreakSerializer(result.streak).data if result.streak else None,
             "rewards_unlocked": UserRewardListSerializer(result.rewards_unlocked, many=True).data,
+            "badges_unlocked": UserBadgeSerializer(result.badges_unlocked, many=True).data,
         }
         return Response(data, status=201 if result.created else 200)
 

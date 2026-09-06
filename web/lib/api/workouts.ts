@@ -4,6 +4,7 @@ import type {
   Exercise,
   ExerciseDetail,
   ExerciseSet,
+  FinishWorkoutSessionResult,
   PaginatedResponse,
   SessionExercise,
   WorkoutSessionDetail,
@@ -93,7 +94,7 @@ export function deleteExerciseSet(
 }
 
 export function finishWorkoutSession(id: string) {
-  return apiFetch<WorkoutSessionDetail>(
+  return apiFetch<FinishWorkoutSessionResult>(
     `/api/v1/me/workouts/sessions/${id}/finish/`,
     { method: "POST" },
     { auth: true }

@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
+from apps.analytics import services as analytics_services
 from apps.checkins import services as checkin_services
 from apps.checkins.serializers import CheckinSerializer
 from apps.gyms import services
@@ -133,6 +134,16 @@ class GymMemberDetailView(APIView):
         )
         services.remove_gym_member(actor=request.user, gym=gym, membership=membership)
         return Response(status=204)
+
+
+class GymAnalyticsView(APIView):
+    def get(self, request, pk):
+        gym = get_object_or_404(Gym, pk=pk)
+        range_param = request.query_params.get("range", "30d")
+        data = analytics_services.get_gym_analytics(
+            gym=gym, actor=request.user, range_param=range_param
+        )
+        return Response(data)
 
 
 class GymMemberRestDayView(APIView):

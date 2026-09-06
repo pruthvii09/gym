@@ -30,10 +30,11 @@ from apps.users.tasks import send_otp_email_task
 #      message and the task's stack.
 
 
-def register_user(*, email, password, first_name="", last_name="", phone=None, gym=None):
+def register_user(*, email, username, password, first_name="", last_name="", phone=None, gym=None):
     with transaction.atomic():
         user = User.objects.create_user(
             email=email,
+            username=username,
             password=password,
             first_name=first_name,
             last_name=last_name,

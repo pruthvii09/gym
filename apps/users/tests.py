@@ -11,7 +11,11 @@ from apps.users.models import User
 
 class AuthFlowTests(APITestCase):
     def setUp(self):
-        self.credentials = {"email": "test@example.com", "password": "SuperSecret123!"}
+        self.credentials = {
+            "email": "test@example.com",
+            "username": "test_user",
+            "password": "SuperSecret123!",
+        }
 
     def tearDown(self):
         cache.clear()
@@ -180,3 +184,108 @@ class AuthFlowTests(APITestCase):
 
         refresh_response = self.client.post("/api/v1/auth/refresh/", {"refresh": refresh})
         self.assertEqual(refresh_response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class UsernameTests(APITestCase):
+    def setUp(self):
+        self.credentials = {
+            "email": "usernametest@example.com",
+            "username": "username_test",
+            "password": "SuperSecret123!",
+        }
+
+    def test_register_requires_username(self):
+        response = self.client.post(
+            "/api/v1/auth/register/", {"email": "nouser@example.com", "password": "SuperSecret123!"}
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("username", response.data["error"]["details"])
+
+    def test_register_rejects_duplicate_username(self):
+        self.client.post("/api/v1/auth/register/", self.credentials)
+        response = self.client.post(
+            "/api/v1/auth/register/",
+            {**self.credentials, "email": "different@example.com"},
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_register_rejects_invalid_username_format(self):
+        response = self.client.post(
+            "/api/v1/auth/register/", {**self.credentials, "username": "Not A Valid Name!"}
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_create_user_without_username_auto_generates_one(self):
+        user = User.objects.create_user(email="autogen@example.com", password="SuperSecret123!")
+        self.assertTrue(user.username)
+        self.assertRegex(user.username, r"^[a-z0-9_]{3,30}$")
+
+    def test_create_user_auto_generated_usernames_are_unique_on_collision(self):
+        first = User.objects.create_user(email="samebase@example.com", password="SuperSecret123!")
+        second = User.objects.create_user(email="samebase@other.com", password="SuperSecret123!")
+        self.assertNotEqual(first.username, second.username)
+
+    def test_me_can_update_own_username(self):
+        self.client.post("/api/v1/auth/register/", self.credentials)
+        login = self.client.post(
+            "/api/v1/auth/login/",
+            {"email": self.credentials["email"], "password": self.credentials["password"]},
+        )
+        auth_header = {"HTTP_AUTHORIZATION": f"Bearer {login.data['access']}"}
+
+        response = self.client.patch(
+            "/api/v1/me/", {"username": "new_username"}, format="json", **auth_header
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["username"], "new_username")
+
+
+class PublicProfileTests(APITestCase):
+    def setUp(self):
+        self.viewer = User.objects.create_user(
+            email="viewer@example.com", password="SuperSecret123!", username="viewer_one"
+        )
+        self.target = User.objects.create_user(
+            email="target@example.com",
+            password="SuperSecret123!",
+            username="target_two",
+            first_name="Target",
+            last_name="User",
+        )
+        login = self.client.post(
+            "/api/v1/auth/login/", {"email": "viewer@example.com", "password": "SuperSecret123!"}
+        )
+        self.auth_header = {"HTTP_AUTHORIZATION": f"Bearer {login.data['access']}"}
+
+    def test_public_profile_returns_non_pii_fields(self):
+        response = self.client.get(f"/api/v1/users/{self.target.username}/", **self.auth_header)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["username"], "target_two")
+        self.assertNotIn("email", response.data)
+        self.assertNotIn("phone", response.data)
+        self.assertNotIn("is_staff", response.data)
+
+    def test_public_profile_404s_for_unknown_username(self):
+        response = self.client.get("/api/v1/users/does-not-exist/", **self.auth_header)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_public_profile_requires_authentication(self):
+        response = self.client.get(f"/api/v1/users/{self.target.username}/")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_search_matches_username(self):
+        response = self.client.get("/api/v1/users/search/?q=target", **self.auth_header)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        usernames = [row["username"] for row in response.data]
+        self.assertIn("target_two", usernames)
+
+    def test_search_results_never_include_email_or_phone(self):
+        response = self.client.get("/api/v1/users/search/?q=target", **self.auth_header)
+        for row in response.data:
+            self.assertNotIn("email", row)
+            self.assertNotIn("phone", row)
+
+    def test_search_without_query_returns_empty(self):
+        response = self.client.get("/api/v1/users/search/", **self.auth_header)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, [])

@@ -1,6 +1,7 @@
 from django.urls import path
 
 from apps.gyms.views import (
+    GymAnalyticsView,
     GymCheckinDeviceCreateView,
     GymCheckinDeviceQrView,
     GymCheckinDeviceRotateView,
@@ -33,6 +34,7 @@ urlpatterns = [
         GymMemberRestDayView.as_view(),
         name="gym-member-rest-day",
     ),
+    path("gyms/<uuid:pk>/analytics/", GymAnalyticsView.as_view(), name="gym-analytics"),
     path("gyms/<uuid:pk>/devices/", GymDeviceListView.as_view(), name="gym-device-list"),
     path("gyms/<uuid:pk>/staff/", GymStaffListView.as_view(), name="gym-staff-list"),
     path(

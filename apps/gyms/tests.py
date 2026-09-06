@@ -205,6 +205,31 @@ class GymSelfServiceManagementTests(APITestCase):
         public_response = self.client.get(f"/api/v1/gyms/{self.gym.id}/")
         self.assertEqual(public_response.data["name"], "Iron Works Updated")
 
+    def test_checkin_radius_is_bounded(self):
+        # A radius this large would effectively disable location
+        # verification for every check-in at this gym.
+        response = self.client.patch(
+            f"/api/v1/gyms/{self.gym.id}/",
+            {"checkin_radius_meters": 20000},
+            **self._auth_header(self.owner.email),
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        response = self.client.patch(
+            f"/api/v1/gyms/{self.gym.id}/",
+            {"checkin_radius_meters": 1},
+            **self._auth_header(self.owner.email),
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        response = self.client.patch(
+            f"/api/v1/gyms/{self.gym.id}/",
+            {"checkin_radius_meters": 250},
+            **self._auth_header(self.owner.email),
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["checkin_radius_meters"], 250)
+
     def test_manager_staff_and_outsider_cannot_update_profile(self):
         for email in (self.manager.email, self.staff_member.email, self.outsider.email):
             response = self.client.patch(
@@ -361,7 +386,8 @@ class GymStaffInviteAndManagementTests(APITestCase):
 
         # The invitee doesn't have an account yet -- register, then accept
         register_response = self.client.post(
-            "/api/v1/auth/register/", {"email": invitee_email, "password": PASSWORD}
+            "/api/v1/auth/register/",
+            {"email": invitee_email, "username": "invitee_user", "password": PASSWORD},
         )
         self.assertEqual(register_response.status_code, status.HTTP_201_CREATED)
         invitee_header = self._auth_header(invitee_email)
