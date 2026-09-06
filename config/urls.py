@@ -22,6 +22,10 @@ urlpatterns = [
     path("api/v1/", include("apps.rewards.urls")),
     path("api/v1/", include("apps.notifications.urls")),
     path("api/v1/", include("apps.workouts.urls")),
+    path("api/v1/", include("apps.analytics.urls")),
+    path("api/v1/", include("apps.badges.urls")),
+    path("api/v1/", include("apps.users.public_urls")),
+    path("api/v1/", include("apps.social.urls")),
     # Admin/operations API -- every endpoint under these is gated by
     # apps.common.permissions.IsStaffUser (User.is_staff), not just
     # IsAuthenticated. See API_CONTRACTS.md for the full admin surface.
@@ -33,6 +37,7 @@ urlpatterns = [
     path("api/v1/", include("apps.rewards.admin_urls")),
     path("api/v1/", include("apps.challenges.admin_urls")),
     path("api/v1/", include("apps.audit.urls")),
+    path("api/v1/", include("apps.analytics.admin_urls")),
     path("api/v1/schema/", SpectacularAPIView.as_view(), name="schema"),
     path(
         "api/v1/docs/",

@@ -51,6 +51,9 @@ INSTALLED_APPS = [
     "apps.notifications",
     "apps.audit",
     "apps.workouts",
+    "apps.analytics",
+    "apps.badges",
+    "apps.social",
 ]
 
 MIDDLEWARE = [

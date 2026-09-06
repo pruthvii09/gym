@@ -3,7 +3,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Dumbbell, Flame, LogOut, Plus, QrCode, ShieldCheck } from "lucide-react";
+import {
+  BarChart3,
+  Dumbbell,
+  Flame,
+  LogOut,
+  Plus,
+  QrCode,
+  ShieldCheck,
+  Users,
+  UserRound,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -69,19 +79,47 @@ function MemberDashboard({ me, displayName }: { me: MeResponse; displayName: str
             {me.gym ? me.gym.name : "No home gym yet"}
           </p>
         </div>
-        {me.gym ? (
-          <div className="flex shrink-0 gap-2">
-            <Button variant="outline" render={<Link href="/workouts" />}>
-              <Dumbbell />
-              Workouts
-            </Button>
-            <Button variant="gradient" render={<Link href="/checkin" />}>
-              <QrCode />
-              Scan to check in
-            </Button>
-          </div>
-        ) : null}
+        {/* min-w-0 (not shrink-0) so this group can give up width to wrap
+            its own buttons onto a second line instead of forcing the whole
+            row past the viewport -- shrink-0 blocked that by pinning the
+            div at its unwrapped max-content width. The primary "Scan to
+            check in" CTA is pulled out into its own full-width button below
+            on mobile (hidden sm:inline-flex here) since it's the one action
+            worth a phone user's thumb, not another same-sized pill. */}
+        <div className="flex min-w-0 flex-wrap gap-2 sm:shrink-0">
+          <Button variant="outline" render={<Link href="/analytics" />}>
+            <BarChart3 />
+            Analytics
+          </Button>
+          <Button variant="outline" render={<Link href="/feed" />}>
+            <Users />
+            Feed
+          </Button>
+          {me.gym ? (
+            <>
+              <Button variant="outline" render={<Link href="/workouts" />}>
+                <Dumbbell />
+                Workouts
+              </Button>
+              <Button
+                variant="gradient"
+                className="hidden sm:inline-flex"
+                render={<Link href="/checkin" />}
+              >
+                <QrCode />
+                Scan to check in
+              </Button>
+            </>
+          ) : null}
+        </div>
       </div>
+
+      {me.gym ? (
+        <Button variant="gradient" className="w-full sm:hidden" render={<Link href="/checkin" />}>
+          <QrCode />
+          Scan to check in
+        </Button>
+      ) : null}
 
       <ActiveWorkoutBanner />
 
@@ -172,10 +210,16 @@ export default function DashboardPage() {
             </span>
             GymStreak
           </Link>
-          <Button variant="ghost" size="sm" onClick={handleLogout}>
-            <LogOut />
-            Log out
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="sm" render={<Link href="/profile" />}>
+              <UserRound />
+              Profile
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleLogout}>
+              <LogOut />
+              Log out
+            </Button>
+          </div>
         </div>
       </header>
 

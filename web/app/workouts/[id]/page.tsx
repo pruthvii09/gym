@@ -20,6 +20,7 @@ import {
 import { ExercisePickerSheet } from "@/components/workouts/exercise-picker-sheet";
 import { SessionExerciseCard } from "@/components/workouts/session-exercise-card";
 import { formatDuration } from "@/components/workouts/workout-history-card";
+import { AchievementUnlockedOverlay } from "@/components/badges/achievement-unlocked-overlay";
 import {
   addSessionExercise,
   cancelWorkoutSession,
@@ -28,7 +29,7 @@ import {
 } from "@/lib/api/workouts";
 import { ApiError } from "@/lib/api/client";
 import { useCurrentUser } from "@/lib/auth/use-current-user";
-import type { WorkoutSessionDetail } from "@/types/api";
+import type { UserBadge, WorkoutSessionDetail } from "@/types/api";
 
 function formatElapsed(seconds: number) {
   const h = Math.floor(seconds / 3600);
@@ -69,6 +70,7 @@ export default function WorkoutSessionPage() {
   const [cancelling, setCancelling] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [unlockedBadges, setUnlockedBadges] = useState<UserBadge[]>([]);
 
   const load = () => {
     getWorkoutSession(params.id)
@@ -101,6 +103,7 @@ export default function WorkoutSessionPage() {
     try {
       const updated = await finishWorkoutSession(params.id);
       setSession(updated);
+      if (updated.badges_unlocked.length > 0) setUnlockedBadges(updated.badges_unlocked);
     } catch (err) {
       // leave the session active -- the finish bar stays put so they can retry
       setActionError(err instanceof ApiError ? err.message : "Couldn't finish this workout.");
@@ -253,6 +256,13 @@ export default function WorkoutSessionPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {unlockedBadges.length > 0 ? (
+        <AchievementUnlockedOverlay
+          badges={unlockedBadges}
+          onDismiss={() => setUnlockedBadges([])}
+        />
+      ) : null}
     </div>
   );
 }

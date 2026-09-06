@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2, Plus, Search, X } from "lucide-react";
+import { ChevronDown, Loader2, Plus, Search, X } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,10 +13,78 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { MuscleBodyDiagram } from "@/components/workouts/muscle-body-diagram";
 import { listExercises } from "@/lib/api/workouts";
 import { ApiError } from "@/lib/api/client";
+import { useMediaQuery } from "@/lib/hooks/use-media-query";
 import { cn } from "@/lib/utils";
 import type { Exercise } from "@/types/api";
+
+function ExerciseResultRow({
+  exercise,
+  adding,
+  onAdd,
+}: {
+  exercise: Exercise;
+  adding: boolean;
+  onAdd: () => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className="rounded-lg border border-border">
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={() => setExpanded((v) => !v)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            setExpanded((v) => !v);
+          }
+        }}
+        className="flex w-full cursor-pointer items-center justify-between gap-3 p-3 text-left"
+      >
+        <div className="min-w-0">
+          <p className="truncate text-sm font-medium">{exercise.name}</p>
+          <div className="mt-1 flex flex-wrap gap-1">
+            <Badge variant="outline" className="bg-muted text-[10px] text-muted-foreground capitalize">
+              {exercise.category}
+            </Badge>
+            {exercise.primary_muscles.slice(0, 2).map((m) => (
+              <Badge key={m} variant="outline" className="bg-muted text-[10px] text-muted-foreground capitalize">
+                {m}
+              </Badge>
+            ))}
+          </div>
+        </div>
+        <div className="flex shrink-0 items-center gap-1">
+          <ChevronDown className={cn("size-4 text-muted-foreground transition-transform", expanded && "rotate-180")} />
+          <Button
+            size="icon-sm"
+            variant="outline"
+            disabled={adding}
+            onClick={(e) => {
+              e.stopPropagation();
+              onAdd();
+            }}
+          >
+            {adding ? <Loader2 className="animate-spin" /> : <Plus />}
+          </Button>
+        </div>
+      </div>
+      {expanded ? (
+        <div className="border-t border-border px-3 pb-3">
+          <MuscleBodyDiagram
+            primaryMuscles={exercise.primary_muscles}
+            secondaryMuscles={exercise.secondary_muscles}
+            height={110}
+          />
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
 const CATEGORIES = [
   "strength",
@@ -115,6 +183,11 @@ export function ExercisePickerSheet({
   const [results, setResults] = useState<Exercise[] | null>(null);
   const [addingId, setAddingId] = useState<string | null>(null);
   const [addError, setAddError] = useState<string | null>(null);
+  // Below `sm`, a right-side drawer only gets 75vw at full height -- too
+  // cramped for this screen's actual job (search + filters + a scrollable
+  // result list). A bottom sheet uses the full width instead; sm: and up
+  // keeps today's right-side drawer unchanged.
+  const isMobile = useMediaQuery("(max-width: 639px)");
 
   useEffect(() => {
     if (!open) return;
@@ -149,7 +222,18 @@ export function ExercisePickerSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="flex flex-col overflow-hidden sm:max-w-md">
+      <SheetContent
+        side={isMobile ? "bottom" : "right"}
+        // Inline style, not a `h-[85vh]` class: the shared Sheet component's
+        // own `data-[side=bottom]:h-auto` utility (an attribute-selector
+        // variant) beats a plain height class on specificity, so a class
+        // here gets silently overridden. An inline style always wins.
+        style={isMobile ? { height: "85vh" } : undefined}
+        className={cn(
+          "flex flex-col overflow-hidden",
+          isMobile ? "rounded-t-xl" : "sm:max-w-md"
+        )}
+      >
         <SheetHeader>
           <SheetTitle>Add an exercise</SheetTitle>
           <SheetDescription>Search or filter the catalog, tap to add it to your workout.</SheetDescription>
@@ -209,37 +293,12 @@ export function ExercisePickerSheet({
             <p className="py-8 text-center text-sm text-muted-foreground">No exercises match.</p>
           ) : (
             results.map((exercise) => (
-              <div
+              <ExerciseResultRow
                 key={exercise.id}
-                className="flex items-center justify-between gap-3 rounded-lg border border-border p-3"
-              >
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium">{exercise.name}</p>
-                  <div className="mt-1 flex flex-wrap gap-1">
-                    <Badge variant="outline" className="bg-muted text-[10px] text-muted-foreground capitalize">
-                      {exercise.category}
-                    </Badge>
-                    {exercise.primary_muscles.slice(0, 2).map((m) => (
-                      <Badge
-                        key={m}
-                        variant="outline"
-                        className="bg-muted text-[10px] text-muted-foreground capitalize"
-                      >
-                        {m}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-                <Button
-                  size="icon-sm"
-                  variant="outline"
-                  className="shrink-0"
-                  disabled={addingId === exercise.id}
-                  onClick={() => handleAdd(exercise)}
-                >
-                  {addingId === exercise.id ? <Loader2 className="animate-spin" /> : <Plus />}
-                </Button>
-              </div>
+                exercise={exercise}
+                adding={addingId === exercise.id}
+                onAdd={() => handleAdd(exercise)}
+              />
             ))
           )}
         </div>

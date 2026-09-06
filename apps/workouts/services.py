@@ -10,9 +10,11 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
+from apps.badges import services as badge_services
 from apps.checkins.models import CheckIn
 from apps.gyms import services as gym_services
 from apps.gyms.models import GymMembership
+from apps.social.tasks import record_workout_activity
 from apps.workouts.models import ExerciseSet, SessionExercise, WorkoutSession
 
 NOT_CHECKED_IN_MSG = "Check in at your gym before starting a workout."
@@ -101,6 +103,13 @@ def finish_session(session):
     session.ended_at = timezone.now()
     session.status = WorkoutSession.Status.COMPLETED
     session.save(update_fields=["ended_at", "status", "updated_at"])
+    # Attached to the returned instance, not a new return type -- same
+    # pattern apps.streaks.services.rebuild_user_streak uses for
+    # newly_earned_rewards/newly_earned_badges. Covers workout/set-driven
+    # badges; streak/check-in/reward-driven ones are evaluated at check-in
+    # time instead.
+    session.newly_earned_badges = badge_services.evaluate_badges(session.user)
+    transaction.on_commit(lambda sid=session.id: record_workout_activity.delay(session_id=sid))
     return session
 
 

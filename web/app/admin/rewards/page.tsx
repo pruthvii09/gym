@@ -78,9 +78,9 @@ function RewardRow({
   return (
     <li className="space-y-3 rounded-lg border border-border p-4">
       <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="font-medium">{reward.name}</p>
-          <p className="text-sm text-muted-foreground">
+        <div className="min-w-0">
+          <p className="truncate font-medium">{reward.name}</p>
+          <p className="truncate text-sm text-muted-foreground">
             {reward.gym_name ?? "Platform-wide"} — {REWARD_TYPE_LABEL[reward.reward_type]} —{" "}
             {reward.required_streak}-day streak
           </p>

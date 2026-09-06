@@ -227,7 +227,7 @@ function ReviewsView() {
             </button>
           ))}
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row">
           <Input
             placeholder="Search by email"
             value={search}
@@ -239,7 +239,7 @@ function ReviewsView() {
             onValueChange={(v) => setRiskLevel(v === "all" ? "" : (v as FraudRiskLevel))}
             items={{ all: "All risk levels", ...Object.fromEntries(RISK_LEVELS.map((r) => [r, FRAUD_RISK_LABEL[r]])) }}
           >
-            <SelectTrigger className="w-40 shrink-0">
+            <SelectTrigger className="w-full sm:w-40 sm:shrink-0">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

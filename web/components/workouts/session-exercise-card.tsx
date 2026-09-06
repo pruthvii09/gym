@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { MuscleBodyDiagram } from "@/components/workouts/muscle-body-diagram";
 import { addExerciseSet, deleteExerciseSet } from "@/lib/api/workouts";
 import { ApiError } from "@/lib/api/client";
 import type { SessionExercise } from "@/types/api";
@@ -77,6 +78,12 @@ export function SessionExerciseCard({
           </div>
         </div>
 
+        <MuscleBodyDiagram
+          primaryMuscles={sessionExercise.exercise.primary_muscles}
+          secondaryMuscles={sessionExercise.exercise.secondary_muscles}
+          height={130}
+        />
+
         {sessionExercise.sets.length > 0 ? (
           <div className="overflow-hidden rounded-lg border border-border">
             <table className="w-full text-sm">
@@ -96,18 +103,20 @@ export function SessionExerciseCard({
                     <td className="py-1.5">{set.weight_kg ? `${set.weight_kg} kg` : "—"}</td>
                     {!readOnly ? (
                       <td className="py-1.5 pr-2 text-right">
-                        <button
+                        <Button
                           type="button"
+                          variant="ghost"
+                          size="icon-sm"
                           onClick={() => handleDeleteSet(set.id)}
                           disabled={deletingId === set.id}
                           className="text-muted-foreground hover:text-destructive"
                         >
                           {deletingId === set.id ? (
-                            <Loader2 className="size-3.5 animate-spin" />
+                            <Loader2 className="animate-spin" />
                           ) : (
-                            <Trash2 className="size-3.5" />
+                            <Trash2 />
                           )}
-                        </button>
+                        </Button>
                       </td>
                     ) : null}
                   </tr>
@@ -120,7 +129,7 @@ export function SessionExerciseCard({
         )}
 
         {!readOnly ? (
-          <div className="flex items-end gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
             <div className="flex-1 space-y-1">
               <label className="text-xs text-muted-foreground">Reps</label>
               <Input

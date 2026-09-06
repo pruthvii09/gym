@@ -51,6 +51,10 @@ export interface PaginatedResponse<T> {
 
 export interface RegisterRequest {
   email: string;
+  // Lowercase letters, numbers, underscores only, 3-30 characters -- powers
+  // the public profile/search surface (web/lib/badge-tiers.ts et al), never
+  // used for auth (email remains the login identifier).
+  username: string;
   password: string;
   first_name?: string;
   last_name?: string;
@@ -64,6 +68,7 @@ export interface RegisterRequest {
 export interface RegisterResponse {
   id: string;
   email: string;
+  username: string;
   first_name: string;
   last_name: string;
   phone: string | null;
@@ -84,6 +89,7 @@ export interface LoginResponse {
 export interface MeResponse {
   id: string;
   email: string;
+  username: string;
   first_name: string;
   last_name: string;
   phone: string | null;
@@ -92,6 +98,13 @@ export interface MeResponse {
   is_staff: boolean;
   created_at: string;
   gym: { id: string; name: string } | null;
+}
+
+export interface UpdateProfileRequest {
+  username?: string;
+  first_name?: string;
+  last_name?: string;
+  phone?: string | null;
 }
 
 export interface ApiErrorBody {
@@ -263,9 +276,10 @@ export interface CreateCheckinResult extends CheckIn {
   message: string;
   // Both null unless this check-in was (or already was) verified -- a
   // review/rejected check-in never touched the streak, so there's nothing
-  // to report. rewards_unlocked is [] (never null) either way.
+  // to report. rewards_unlocked/badges_unlocked are [] (never null) either way.
   streak: UserStreak | null;
   rewards_unlocked: UserReward[];
+  badges_unlocked: UserBadge[];
 }
 
 // --- Rewards ----------------------------------------------------------------
@@ -496,6 +510,13 @@ export interface WorkoutSessionDetail extends WorkoutSessionSummary {
   exercises: SessionExercise[];
 }
 
+// finish_session's response shape only -- start/get/cancel return
+// WorkoutSessionDetail without this key, since only finishing can unlock a
+// workout/set-driven badge.
+export interface FinishWorkoutSessionResult extends WorkoutSessionDetail {
+  badges_unlocked: UserBadge[];
+}
+
 // --- Fraud (platform-staff) ---------------------------------------------
 
 export type FraudRiskLevel = "low" | "medium" | "high";
@@ -547,4 +568,174 @@ export interface AdminFraudEvent {
 export interface CreateReviewFromEventsRequest {
   event_ids: string[];
   reason?: string;
+}
+
+// --- Analytics ------------------------------------------------------------
+// range=7d|30d|90d|all. 7d/30d bucket daily, 90d/all bucket weekly --
+// `period` is always an ISO date string (the bucket's start day).
+
+export type AnalyticsRange = "7d" | "30d" | "90d" | "all";
+
+export interface AnalyticsRangeInfo {
+  start: string | null;
+  end: string;
+}
+
+export interface PeriodCount {
+  period: string;
+  count: number;
+}
+
+export interface WorkoutVolumePoint {
+  period: string;
+  sets: number;
+  total_weight_kg: number;
+}
+
+export interface MuscleSetCount {
+  muscle: string;
+  sets: number;
+}
+
+export interface MemberAnalytics {
+  range: AnalyticsRangeInfo;
+  checkins_over_time: PeriodCount[];
+  workout_volume_over_time: WorkoutVolumePoint[];
+  muscle_set_counts: MuscleSetCount[];
+  rewards_earned_over_time: PeriodCount[];
+  stats: {
+    current_streak: number;
+    longest_streak: number;
+    total_checkins: number;
+    total_workouts: number;
+    total_sets: number;
+    favorite_gym_name: string | null;
+  };
+}
+
+// day_of_week: 1=Sunday..7=Saturday (Django's ExtractWeekDay convention) --
+// convert to a JS Date weekday with `day_of_week - 1`.
+export interface CheckinHeatmapCell {
+  day_of_week: number;
+  hour: number;
+  count: number;
+}
+
+export interface GymAnalytics {
+  range: AnalyticsRangeInfo;
+  checkins_over_time: PeriodCount[];
+  member_growth: PeriodCount[];
+  checkin_heatmap: CheckinHeatmapCell[];
+  rewards_earned_over_time: PeriodCount[];
+  stats: {
+    total_members: number;
+    active_members_this_week: number;
+    inactive_members_this_week: number;
+    average_current_streak: number;
+    checkins_this_month: number;
+  };
+}
+
+export interface StreakDistributionBucket {
+  bucket: string;
+  count: number;
+}
+
+export interface FraudReviewsOverTimePoint {
+  period: string;
+  open: number;
+  approved: number;
+  rejected: number;
+}
+
+export interface TopGymByCheckins {
+  gym_name: string;
+  count: number;
+}
+
+export interface PlatformAnalytics {
+  range: AnalyticsRangeInfo;
+  checkins_over_time: PeriodCount[];
+  signups_over_time: PeriodCount[];
+  streak_distribution: StreakDistributionBucket[];
+  fraud_reviews_over_time: FraudReviewsOverTimePoint[];
+  top_gyms_by_checkins: TopGymByCheckins[];
+  stats: {
+    total_users: number;
+    total_gyms: number;
+    pending_gyms: number;
+    total_checkins_all_time: number;
+    open_fraud_reviews: number;
+    total_workouts_logged: number;
+  };
+}
+
+// --- Badges & public profiles ------------------------------------------
+// Typed against apps/badges and apps/users' public surface.
+
+export type BadgeTier = "bronze" | "silver" | "gold" | "platinum";
+export type BadgeMetric =
+  | "current_streak"
+  | "longest_streak"
+  | "total_checkins"
+  | "total_workouts"
+  | "total_sets"
+  | "rewards_earned";
+
+export interface Badge {
+  id: string;
+  key: string;
+  name: string;
+  description: string;
+  icon: string;
+  tier: BadgeTier;
+  metric: BadgeMetric;
+  threshold: number;
+}
+
+export interface UserBadge {
+  id: string;
+  badge: Badge;
+  earned_at: string;
+  is_featured: boolean;
+}
+
+// GET /me/badges/ -- every active badge, unlocked or not. user_badge is
+// null for a locked one; current_value is always present (0..threshold)
+// so the frontend can render a progress bar either way.
+export interface BadgeProgress {
+  badge: Badge;
+  user_badge: UserBadge | null;
+  current_value: number;
+}
+
+export interface PublicProfile {
+  username: string;
+  first_name: string;
+  last_name: string;
+  joined_at: string;
+  gym_name: string | null;
+  current_streak: number;
+  longest_streak: number;
+  featured_badges: UserBadge[];
+  total_badge_count: number;
+  follower_count: number;
+  following_count: number;
+  is_following: boolean;
+}
+
+export interface UserSearchResult {
+  username: string;
+  first_name: string;
+  last_name: string;
+}
+
+export type ActivityType = "checkin" | "streak_milestone" | "badge_earned" | "workout_completed";
+
+export interface ActivityItem {
+  id: string;
+  type: ActivityType;
+  actor: UserSearchResult;
+  summary: string;
+  created_at: string;
 }

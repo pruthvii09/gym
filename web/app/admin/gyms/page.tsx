@@ -62,9 +62,9 @@ function GymRow({ gym, onChanged }: { gym: AdminGym; onChanged: () => void }) {
   return (
     <li className="space-y-3 rounded-lg border border-border p-4">
       <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="font-medium">{gym.name}</p>
-          <p className="text-sm text-muted-foreground">
+        <div className="min-w-0">
+          <p className="truncate font-medium">{gym.name}</p>
+          <p className="truncate text-sm text-muted-foreground">
             {gym.address}, {gym.city}
             {gym.state ? `, ${gym.state}` : ""} — {gym.country}
           </p>

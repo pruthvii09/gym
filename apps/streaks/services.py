@@ -6,9 +6,11 @@ from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
 from apps.audit import services as audit_services
+from apps.badges import services as badge_services
 from apps.checkins.models import CheckIn
 from apps.notifications.tasks import send_streak_milestone_notification
 from apps.rewards import services as reward_services
+from apps.social.tasks import record_streak_milestone_activity
 from apps.streaks import calculator
 from apps.streaks.models import StreakPolicy, UserRestDay, UserStreak
 
@@ -79,10 +81,20 @@ def rebuild_user_streak(user) -> UserStreak:
         # (apps.checkins.services) reads this, to show what a check-in just
         # unlocked instead of making the user find out on the dashboard.
         streak.newly_earned_rewards = reward_services.evaluate_rewards(user, streak)
+        # Badges evaluated right after rewards, inside the same transaction,
+        # same "attach to the returned instance" pattern -- covers every
+        # streak/check-in/reward-driven badge. Workout/set-driven badges are
+        # evaluated separately, from apps.workouts.services.finish_session.
+        streak.newly_earned_badges = badge_services.evaluate_badges(user)
 
         if result.longest_streak > previous_longest:
             transaction.on_commit(
                 lambda uid=user.id, val=result.longest_streak: send_streak_milestone_notification.delay(
+                    user_id=uid, streak_value=val
+                )
+            )
+            transaction.on_commit(
+                lambda uid=user.id, val=result.longest_streak: record_streak_milestone_activity.delay(
                     user_id=uid, streak_value=val
                 )
             )

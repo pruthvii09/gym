@@ -25,6 +25,7 @@ from apps.fraud.tasks import assess_and_flag_task
 from apps.gyms import services as gym_services
 from apps.gyms import tokens
 from apps.gyms.models import CheckinSession, GymCheckinDevice, GymMembership
+from apps.social.tasks import record_checkin_activity
 from apps.streaks import services as streak_services
 from apps.streaks.models import UserStreak
 from apps.users.services import record_device_login
@@ -54,6 +55,8 @@ class CheckinResult:
     # `streak` is still populated there -- a replay shouldn't re-announce a
     # reward the first response already delivered.
     rewards_unlocked: list = field(default_factory=list)
+    # Same replay-empty reasoning as rewards_unlocked, for badges.
+    badges_unlocked: list = field(default_factory=list)
 
 
 def create_checkin(
@@ -358,9 +361,14 @@ def _persist(
     # against silently missing a future VERIFIED-producing branch.
     streak = None
     rewards_unlocked = []
+    badges_unlocked = []
     if checkin.status == CheckIn.Status.VERIFIED:
         streak = streak_services.rebuild_user_streak(user)
         rewards_unlocked = getattr(streak, "newly_earned_rewards", [])
+        badges_unlocked = getattr(streak, "newly_earned_badges", [])
+        transaction.on_commit(
+            lambda cid=checkin.id: record_checkin_activity.delay(checkin_id=cid)
+        )
 
     # User-level risk assessment, every outcome (a rejected attempt matters
     # for "repeated failed check-ins"). The only automatic consequence of a
@@ -380,6 +388,7 @@ def _persist(
         message=message,
         streak=streak,
         rewards_unlocked=rewards_unlocked,
+        badges_unlocked=badges_unlocked,
     )
 
 

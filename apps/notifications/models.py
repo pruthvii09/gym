@@ -9,6 +9,7 @@ class NotificationType(models.TextChoices):
     REWARD_UNLOCKED = "reward_unlocked", "Reward unlocked"
     REWARD_SHIPPED = "reward_shipped", "Reward shipped"
     CHALLENGE = "challenge", "Challenge"
+    NEW_FOLLOWER = "new_follower", "New follower"
     SYSTEM = "system", "System"
 
 
