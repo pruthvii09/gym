@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, usePathname, useParams } from "next/navigation";
 import Link from "next/link";
 import {
+  BarChart3,
   Flame,
   LogOut,
   MoreHorizontal,
@@ -36,6 +37,7 @@ const STAFF_ROLES: GymMembershipRole[] = ["staff", "manager", "owner"];
 
 function buildTabs(gymId: string, role: GymMembershipRole) {
   return [
+    { href: `/gyms/${gymId}/manage/analytics`, label: "Analytics", icon: BarChart3 },
     ...(role === "owner"
       ? [{ href: `/gyms/${gymId}/manage`, label: "Profile", icon: Settings2 }]
       : []),

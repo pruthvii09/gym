@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 
 const ADMIN_NAV = [
   { href: "/admin", label: "Overview" },
+  { href: "/admin/analytics", label: "Analytics" },
   { href: "/admin/gyms", label: "Gyms" },
   { href: "/admin/members", label: "Members" },
   { href: "/admin/rewards", label: "Rewards" },
