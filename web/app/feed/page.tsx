@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
 import { ActivityFeedList } from "@/components/social/activity-feed-list";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 import { useCurrentUser } from "@/lib/auth/use-current-user";
 
 export default function FeedPage() {
@@ -27,7 +28,7 @@ export default function FeedPage() {
   return (
     <div className="flex min-h-screen flex-col">
       <header className="border-b border-border/70 px-6 py-4 sm:px-8">
-        <div className="mx-auto flex max-w-2xl items-center gap-3">
+        <div className="mx-auto flex max-w-2xl items-center justify-between gap-3">
           <Link
             href="/dashboard"
             className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
@@ -35,6 +36,7 @@ export default function FeedPage() {
             <ArrowLeft className="size-4" />
             Back
           </Link>
+          <NotificationBell />
         </div>
       </header>
 

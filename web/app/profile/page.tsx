@@ -3,16 +3,18 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Award, Calendar, Check, Flame, Loader2, MapPin, Pencil, Search, Trophy } from "lucide-react";
+import { ArrowLeft, Award, Bell, Calendar, Check, Flame, Loader2, MapPin, Pencil, Search, Trophy } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { BadgeGrid } from "@/components/badges/badge-grid";
 import { listMyBadges, setFeaturedBadges } from "@/lib/api/badges";
 import { updateProfile } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/client";
 import { useCurrentUser } from "@/lib/auth/use-current-user";
+import { usePushSubscription } from "@/lib/notifications/use-push-subscription";
 import type { BadgeProgress, MeResponse } from "@/types/api";
 
 const FEATURED_LIMIT = 2;
@@ -32,6 +34,8 @@ export default function ProfilePage() {
   const [savingFeatured, setSavingFeatured] = useState(false);
   const [featuredError, setFeaturedError] = useState<string | null>(null);
   const [featuredSaved, setFeaturedSaved] = useState(false);
+
+  const pushSubscription = usePushSubscription();
 
   useEffect(() => {
     if (!initialMe) return;
@@ -237,6 +241,35 @@ export default function ProfilePage() {
             )}
           </CardContent>
         </Card>
+
+        {pushSubscription.permission === "unsupported" ? null : (
+          <Card>
+            <CardContent className="space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <label htmlFor="push-toggle" className="flex items-center gap-1.5 text-sm font-medium">
+                  <Bell className="size-4 text-primary" />
+                  Push notifications
+                </label>
+                <Switch
+                  id="push-toggle"
+                  checked={pushSubscription.permission === "granted"}
+                  disabled={pushSubscription.busy || pushSubscription.permission === "denied"}
+                  onCheckedChange={(checked) =>
+                    void (checked ? pushSubscription.subscribe() : pushSubscription.unsubscribe())
+                  }
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {pushSubscription.permission === "denied"
+                  ? "Notifications are blocked for this site in your browser settings."
+                  : "Get notified about streak milestones, unlocked rewards, and new followers even when GymStreak isn't open."}
+              </p>
+              {pushSubscription.error ? (
+                <p className="text-xs text-destructive">{pushSubscription.error}</p>
+              ) : null}
+            </CardContent>
+          </Card>
+        )}
 
         <div className="text-center">
           <Link

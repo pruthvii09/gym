@@ -17,6 +17,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 import { StreakOverviewCard } from "@/components/dashboard/streak-overview-card";
 import { CheckinActivityCard } from "@/components/dashboard/checkin-activity-card";
 import { RecentCheckinsCard } from "@/components/dashboard/recent-checkins-card";
@@ -211,6 +212,7 @@ export default function DashboardPage() {
             GymStreak
           </Link>
           <div className="flex items-center gap-1">
+            <NotificationBell />
             <Button variant="ghost" size="sm" render={<Link href="/profile" />}>
               <UserRound />
               Profile

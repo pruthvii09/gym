@@ -150,6 +150,7 @@ REST_FRAMEWORK = {
         "gym_reward_redemption_verify": "30/min",
         "gym_staff_invite_create": "20/hour",
         "gym_staff_invite_accept": "20/hour",
+        "push_subscription_register": "30/hour",
     },
 }
 
@@ -212,8 +213,20 @@ DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="no-reply@gymstreak.local
 
 # Base URL of the Next.js frontend -- only needed so an outbound email (gym
 # staff invites) can build a link back into the app. Same role as the
-# frontend's own NEXT_PUBLIC_API_URL, mirrored in reverse.
+# frontend's own NEXT_PUBLIC_API_URL, mirrored in reverse. Also used to
+# build the deep-link URL carried in a push notification's payload (see
+# apps.notifications.tasks.send_push_notification_task).
 FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:3000")
+
+# --- Web Push (VAPID) -------------------------------------------------
+# Generate a keypair with `vapid --gen` (from the pywebpush dependency's
+# py-vapid) and set the two values below. Empty in dev is fine -- pushes
+# just fail silently (send_web_push swallows WebPushException) until keys
+# are set; nothing else in the request path depends on them.
+
+VAPID_PUBLIC_KEY = env("VAPID_PUBLIC_KEY", default="")
+VAPID_PRIVATE_KEY = env("VAPID_PRIVATE_KEY", default="")
+VAPID_ADMIN_EMAIL = env("VAPID_ADMIN_EMAIL", default="admin@gymstreak.local")
 
 # --- OTP policy ----------------------------------------------------------
 # Policy constants, not env vars -- these rarely change and don't vary by

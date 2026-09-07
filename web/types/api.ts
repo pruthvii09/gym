@@ -739,3 +739,41 @@ export interface ActivityItem {
   summary: string;
   created_at: string;
 }
+
+// Typed against apps/notifications: GET /me/notifications/,
+// GET /me/notifications/unread-count/, POST /me/notifications/{id}/read/,
+// GET /push/vapid-public-key/, POST/DELETE /me/push-subscriptions/.
+
+export type NotificationType =
+  | "streak_milestone"
+  | "reward_unlocked"
+  | "reward_shipped"
+  | "challenge"
+  | "new_follower"
+  | "system";
+
+export interface NotificationSummary {
+  id: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  read_at: string | null;
+  created_at: string;
+}
+
+export interface UnreadCountResponse {
+  count: number;
+}
+
+export interface VapidPublicKeyResponse {
+  public_key: string;
+}
+
+export interface RegisterPushSubscriptionRequest {
+  endpoint: string;
+  keys: {
+    p256dh: string;
+    auth: string;
+  };
+  user_agent?: string;
+}

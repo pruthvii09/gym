@@ -1,9 +1,51 @@
+import json
+
 from celery import shared_task
+from django.conf import settings
 
 from apps.notifications import services
-from apps.notifications.models import NotificationType
+from apps.notifications.models import Notification, NotificationType, PushSubscription
+from apps.notifications.push import send_web_push
 from apps.rewards.models import RewardClaim, UserReward
 from apps.users.models import User
+
+# Where clicking a push notification of a given type should land in the
+# frontend. Deliberately coarse (a section, not a specific object) -- the
+# in-app notification list/mark-read flow is the place for anything more
+# precise.
+_DEEP_LINK_PATHS = {
+    NotificationType.STREAK_MILESTONE: "/dashboard",
+    NotificationType.REWARD_UNLOCKED: "/rewards",
+    NotificationType.REWARD_SHIPPED: "/rewards",
+    NotificationType.CHALLENGE: "/dashboard",
+    NotificationType.NEW_FOLLOWER: "/profile",
+    NotificationType.SYSTEM: "/dashboard",
+}
+
+
+@shared_task
+def send_push_notification_task(notification_id):
+    try:
+        notification = Notification.objects.select_related("user").get(pk=notification_id)
+    except Notification.DoesNotExist:
+        return  # referenced row no longer exists -- safe no-op
+
+    subscriptions = PushSubscription.objects.filter(
+        user=notification.user, disabled_at__isnull=True
+    )
+    if not subscriptions:
+        return
+
+    path = _DEEP_LINK_PATHS.get(notification.type, "/dashboard")
+    payload = json.dumps(
+        {
+            "title": notification.title,
+            "body": notification.message,
+            "url": f"{settings.FRONTEND_URL}{path}",
+        }
+    )
+    for subscription in subscriptions:
+        send_web_push(subscription=subscription, payload=payload)
 
 
 @shared_task

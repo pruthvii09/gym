@@ -41,3 +41,26 @@ class Notification(UUIDTimeStampedModel):
 
     def __str__(self):
         return f"{self.type} for {self.user_id}"
+
+
+class PushSubscription(UUIDTimeStampedModel):
+    """A browser Web Push subscription (PushManager.subscribe() result).
+    Soft-disabled (disabled_at set), never hard-deleted, when the push
+    service reports it's gone (404/410) -- same convention as
+    Gym.is_active/User.is_active/Exercise.is_active elsewhere in this
+    codebase. No separate opt-in flag: an active subscription's existence
+    *is* the opt-in signal.
+    """
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="push_subscriptions")
+    endpoint = models.URLField(max_length=500, unique=True)
+    p256dh_key = models.CharField(max_length=255)
+    auth_key = models.CharField(max_length=255)
+    user_agent = models.CharField(max_length=255, blank=True, default="")
+    disabled_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        indexes = [models.Index(fields=["user", "disabled_at"])]
+
+    def __str__(self):
+        return f"push subscription for {self.user_id} ({self.endpoint[:40]})"

@@ -675,7 +675,16 @@ Leaderboard recalculation is **not** built this phase — no leaderboard feature
 
 ### 12.5 Admin
 
-`NotificationAdmin` — fully read-only (no add/change permission), audit visibility into what a user was notified about and when. Same pattern as `CheckInAdmin`/`OTPAdmin`.
+`NotificationAdmin` — fully read-only (no add/change permission), audit visibility into what a user was notified about and when. Same pattern as `CheckInAdmin`/`OTPAdmin`. `PushSubscriptionAdmin` (§12.6) is read-only in the same way.
+
+### 12.6 Push notifications (Web Push)
+
+`apps.notifications.services.notify()` is the single choke point every notification-producing task (§12.3) already goes through, so it also schedules a browser push there — once, only when the `Notification` row is genuinely new (never on an idempotent replay of an at-least-once-delivered Celery task) — via `transaction.on_commit()`. Delivery goes through `apps.notifications.push.send_web_push()`, the provider-agnostic swap point for this channel (same role as `apps.common.email.send_email` for outbound mail), which calls `pywebpush` under VAPID auth (`VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY`/`VAPID_ADMIN_EMAIL` settings). A push carries `{title, body, url}`, where `url` is `FRONTEND_URL` + a per-`type` deep-link path (`apps.notifications.tasks._DEEP_LINK_PATHS`). A send failure never raises — push is a best-effort side channel; a 404/410 response (the push service no longer recognizes the subscription) soft-disables the `PushSubscription` row (`disabled_at`), same convention as `Gym.is_active`/`User.is_active`.
+
+- `GET /api/v1/push/vapid-public-key/` — **AllowAny** (not secret; the client needs it before login on a fresh session). **200**: `{"public_key": "<base64url>"}`.
+- `POST /api/v1/me/push-subscriptions/` — IsAuthenticated, throttled (`push_subscription_register`, 30/hour). Body: `{"endpoint": "<url>", "keys": {"p256dh": "...", "auth": "..."}, "user_agent": "..."}` (the shape of `PushManager.subscribe()`'s `.toJSON()` result). Upserts by `endpoint` (globally unique — a subscription endpoint belongs to one browser installation), reassigning `user` and clearing `disabled_at` on every call, so re-subscribing after a permission reset or a different account logging into the same browser both just work. **204**.
+- `DELETE /api/v1/me/push-subscriptions/` — IsAuthenticated. Body: `{"endpoint": "<url>"}`. **204** if a subscription owned by the caller matched, **404** otherwise.
+- `GET /api/v1/me/notifications/unread-count/` — IsAuthenticated. **200**: `{"count": <int>}` — powers the frontend bell badge without paging through the full list.
 
 ---
 
@@ -704,6 +713,7 @@ All models below inherit `id` (UUID), `created_at`, `updated_at` from `UUIDTimeS
 | `UserReward` | rewards | user, reward_definition (**unique together**), earned_at, claimed_at, status, **claim_code_hash** | One per (user, reward_definition), ever |
 | `RewardClaim` | rewards | user_reward (**OneToOne**), variant, shipping_address (JSON snapshot), tracking_number, carrier, shipped_at, delivered_at, status | One per UserReward, ever. Fulfillment state machine: §16.8 |
 | `Notification` | notifications | user, type (`streak_milestone`/`reward_unlocked`/`reward_shipped`/`challenge`/`system`), title, message, read_at, related_object_type, related_object_id | §12. `related_object_*` excluded from the API serializer — internal dedup key only, enforced by a partial `UniqueConstraint` when `related_object_id` is set |
+| `PushSubscription` | notifications | user, endpoint (unique), p256dh_key, auth_key, user_agent, disabled_at | §12.6. A browser `PushManager.subscribe()` result. Soft-disabled (never hard-deleted) once the push service reports it's gone |
 | `Challenge` | challenges | name, description, start_date, end_date, reward_definition (nullable), status (`draft`/`active`/`completed`/`cancelled`) | Admin-managed, §16.10. No member-facing evaluation logic yet |
 | `AuditLog` | audit | actor (nullable, →User), action, entity_type, entity_id, previous_state (JSON), new_state (JSON), reason | Append-only, written by every admin/operations service function. §16.11 |
 

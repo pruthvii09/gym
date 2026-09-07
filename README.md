@@ -21,7 +21,7 @@ Modular Django monolith. Apps live under `apps/`:
 - `fraud` — simple rule-based risk scoring (per check-in, and a user-level `FraudReview` workflow), audit log feeding `checkins` and `rewards`
 - `streaks` — cached `UserStreak`/`StreakPolicy`, fully rebuildable from verified `CheckIn` history
 - `rewards` — streak-milestone `RewardDefinition`s, `UserReward`/`RewardClaim` lifecycle, `Product`/`ProductVariant`/`InventoryTransaction` ledger-backed inventory
-- `notifications` — the `Notification` inbox (`STREAK_MILESTONE`/`REWARD_UNLOCKED`/`REWARD_SHIPPED`/`CHALLENGE`/`SYSTEM`), a provider-agnostic `notify()` service, and the Celery tasks that create notifications asynchronously off other apps' events
+- `notifications` — the `Notification` inbox (`STREAK_MILESTONE`/`REWARD_UNLOCKED`/`REWARD_SHIPPED`/`NEW_FOLLOWER`/`CHALLENGE`/`SYSTEM`), a provider-agnostic `notify()` service, the Celery tasks that create notifications asynchronously off other apps' events, and browser Web Push delivery (`PushSubscription`, VAPID) off that same `notify()` choke point
 - `challenges` — admin-managed `Challenge` records (time-boxed events, optionally linked to a bonus `RewardDefinition`); no member-facing logic yet
 - `audit` — the single-write-path `AuditLog`: actor, action, entity, previous/new state, reason, timestamp, for every admin/operations mutation across the whole system
 
@@ -96,6 +96,8 @@ Admin/operations API (`/api/v1/admin/...`) — see `API_CONTRACTS.md` §16 for t
 
 Notifications — a provider-agnostic in-app inbox (`apps.notifications`), fed by Celery tasks off other apps' events (never written to synchronously by those apps).
 - `GET /api/v1/me/notifications/` — the caller's own notifications, paginated, newest-first.
+- `GET /api/v1/me/notifications/unread-count/` — `{"count": <int>}`, for a bell badge.
 - `POST /api/v1/me/notifications/{id}/read/` — marks one as read; idempotent (a second call is a no-op, still 200), 404 for a non-owned id.
-- Types: `STREAK_MILESTONE` (a new all-time-high streak), `REWARD_UNLOCKED` (a `UserReward` earned), `REWARD_SHIPPED` (admin marks a `RewardClaim` shipped), `CHALLENGE`/`SYSTEM` (reserved, unused this phase).
+- Types: `STREAK_MILESTONE` (a new all-time-high streak), `REWARD_UNLOCKED` (a `UserReward` earned), `REWARD_SHIPPED` (admin marks a `RewardClaim` shipped), `NEW_FOLLOWER`, `CHALLENGE`/`SYSTEM` (reserved, unused this phase).
+- Browser push (`apps.notifications.push`, VAPID/Web Push via `pywebpush`): `apps.notifications.services.notify()` is the single choke point every notification-producing task already goes through, so a push is scheduled there too — once, only on genuine creation, via `transaction.on_commit()`. `GET /api/v1/push/vapid-public-key/` (unauthenticated) and `POST`/`DELETE /api/v1/me/push-subscriptions/` manage the browser's subscription; a 404/410 from the push service soft-disables the `PushSubscription` row rather than deleting it, matching this codebase's existing `is_active`-style soft-disable convention. See `API_CONTRACTS.md` §12.6.
 - Duplicate-safe by construction: a partial `UniqueConstraint` on `(user, type, related_object_type, related_object_id)` means re-running a task for the same event (e.g. a retried Celery task) never creates a second notification.
